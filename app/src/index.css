@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 52% 4%;
+    --foreground: 200 33% 95%;
+    --card: 222 42% 9%;
+    --card-foreground: 200 33% 95%;
+    --popover: 220 43% 12%;
+    --popover-foreground: 200 33% 95%;
+    --primary: 187 92% 55%;
+    --primary-foreground: 222 52% 4%;
+    --secondary: 220 43% 12%;
+    --secondary-foreground: 198 26% 82%;
+    --muted: 220 38% 14%;
+    --muted-foreground: 207 18% 64%;
+    --accent: 187 60% 17%;
+    --accent-foreground: 187 92% 70%;
+    --destructive: 350 82% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 223 42% 18%;
+    --input: 223 42% 18%;
+    --ring: 187 92% 55%;
+    --radius: 0.75rem;
+    --sidebar-background: 222 52% 5%;
+    --sidebar-foreground: 207 18% 70%;
+    --sidebar-primary: 187 92% 55%;
+    --sidebar-primary-foreground: 222 52% 4%;
+    --sidebar-accent: 220 43% 12%;
+    --sidebar-accent-foreground: 200 33% 95%;
+    --sidebar-border: 223 42% 16%;
+    --sidebar-ring: 187 92% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+    min-height: 100dvh;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100dvh;
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-feature-settings: 'tnum' 1, 'cv02' 1;
+    background:
+      radial-gradient(circle at 20% -10%, rgba(34, 211, 238, 0.11), transparent 32rem),
+      radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.06), transparent 26rem),
+      hsl(var(--background));
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.018) 0,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  }
+
+  code,
+  kbd,
+  .font-mono,
+  [data-number='true'] {
+    font-family: 'JetBrains Mono', 'Noto Sans SC', monospace;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: rgba(34, 211, 238, 0.28);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(34, 211, 238, 0.45);
+  }
+}
+
+@layer components {
+  .ops-panel {
+    @apply rounded-2xl border bg-card/90 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur;
+  }
+
+  .ops-panel-header {
+    @apply flex min-h-12 items-center justify-between gap-3 border-b px-4 py-3;
+  }
+
+  .ops-title {
+    @apply text-sm font-semibold tracking-[0.14em] text-foreground;
+  }
+
+  .ops-subtitle {
+    @apply text-xs leading-5 text-muted-foreground;
+  }
+
+  .ops-input {
+    @apply min-h-11 rounded-xl border bg-secondary/70 px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .ops-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  .metric-value {
+    font-family: 'JetBrains Mono', 'Noto Sans SC', monospace;
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+
+  .table-shell {
+    @apply overflow-hidden rounded-2xl border bg-card/80;
+  }
+
+  .table-scroll {
+    @apply w-full overflow-x-auto;
+  }
+
+  .ops-table {
+    @apply w-full min-w-[720px] text-sm;
+  }
+
+  .ops-table thead {
+    @apply border-b bg-secondary/60 text-left text-[11px] uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  .ops-table th {
+    @apply px-4 py-3 font-medium;
+  }
+
+  .ops-table td {
+    @apply border-b border-border/70 px-4 py-3 align-top;
+  }
+
+  .ops-table tbody tr {
+    @apply transition-colors hover:bg-accent/25;
+  }
+
+  .status-dot {
+    @apply inline-block h-2 w-2 rounded-full;
+    box-shadow: 0 0 12px currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Prevent page-level horizontal scroll; wide tables still scroll inside .table-scroll */
+html,
+body,
+#root {
+  overflow-x: clip;
+}
+
+.ops-panel,
+.ops-panel > * {
+  min-width: 0;
+}
+
+.ops-table td,
+.ops-table th {
+  overflow-wrap: anywhere;
+}
