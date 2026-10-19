@@ -132,9 +132,10 @@ export const labels: Record<string, string> = {
 export const label = (value: string | null | undefined) => (value ? labels[value] ?? value : "—");
 
 export const routeForBusiness = (type: string, id?: number) => {
-  if (type === "order") return `/orders?focus=${id ?? ""}`;
+  if (type === "order") return `/orders?queue=all&focus=${id ?? ""}`;
   if (type === "purchase") return `/procurement?focus=${id ?? ""}`;
-  if (type === "after_sales") return `/shipping?focus=${id ?? ""}`;
+  if (type === "after_sales") return `/after-sales?focus=${id ?? ""}`;
   if (type === "sku") return `/inventory?focus=${id ?? ""}`;
+  if (type === "candidate") return `/sourcing?focus=${id ?? ""}`;
   return "/settings";
 };

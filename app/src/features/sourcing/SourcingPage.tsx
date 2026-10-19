@@ -12,7 +12,7 @@ import { dateTime, label, money } from "@/lib/format";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { trpc } from "@/providers/trpc";
 
-export default function Sourcing() {
+export default function SourcingPage() {
   const workspace = useWorkspace();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
