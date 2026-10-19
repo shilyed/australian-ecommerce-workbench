@@ -23,35 +23,12 @@ import { LOGIN_PATH } from "@/const";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/providers/theme-context";
-import {
-  Boxes,
-  ClipboardCheck,
-  Gauge,
-  Landmark,
-  LogOut,
-  Moon,
-  PackageSearch,
-  PanelLeft,
-  Settings,
-  Ship,
-  ShoppingCart,
-  Sun,
-} from "lucide-react";
+import { LogOut, Moon, PanelLeft, Sun } from "lucide-react";
+import { menuItems } from "@/app/navigation";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { AuthLayoutSkeleton } from "./AuthLayoutSkeleton";
 import { Button } from "./ui/button";
-
-const menuItems = [
-  { icon: Gauge, label: "今日工作台", path: "/" },
-  { icon: PackageSearch, label: "选品", path: "/sourcing" },
-  { icon: ShoppingCart, label: "采购", path: "/procurement" },
-  { icon: Boxes, label: "商品与库存", path: "/inventory" },
-  { icon: ClipboardCheck, label: "订单", path: "/orders" },
-  { icon: Ship, label: "发货与售后", path: "/shipping" },
-  { icon: Landmark, label: "成本与报表", path: "/finance" },
-  { icon: Settings, label: "系统设置", path: "/settings" },
-];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;

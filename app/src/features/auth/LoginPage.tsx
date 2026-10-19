@@ -18,7 +18,7 @@ function getOAuthUrl() {
   return url.toString();
 }
 
-export default function Login() {
+export default function LoginPage() {
   return (
     <div className="relative min-h-screen flex items-center justify-center">
       <div className="absolute right-4 top-4">

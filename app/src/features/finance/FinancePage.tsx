@@ -12,7 +12,7 @@ import { dateOnly, dateTime, money, percent } from "@/lib/format";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { trpc } from "@/providers/trpc";
 
-export default function Finance() {
+export default function FinancePage() {
   const workspace = useWorkspace();
   const addRate = trpc.workbench.addExchangeRate.useMutation({
     onSuccess: async () => { toast.success("汇率快照已保存；历史成本不会静默重算"); await workspace.refresh(); },

@@ -23,7 +23,7 @@ const ROLE_TEXT: Record<string, string> = {
   finance: "财务：成本、汇率、利润与结算；其他模块只读",
 };
 
-export default function Settings() {
+export default function SettingsPage() {
   const { data, isLoading, error, refresh, refetch } = useWorkspace();
   const [syncStore, setSyncStore] = useState<string>("");
   const [syncType, setSyncType] = useState<string>("orders");
