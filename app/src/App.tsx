@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router'
-import { Toaster } from "sonner"
+import { Toaster } from "@/components/ui/sonner"
 import AuthLayout from "./components/AuthLayout"
 import Dashboard from "./pages/Dashboard"
 import Sourcing from "./pages/Sourcing"

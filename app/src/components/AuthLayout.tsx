@@ -21,17 +21,21 @@ import {
 } from "@/components/ui/sidebar";
 import { LOGIN_PATH } from "@/const";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/providers/theme-context";
 import {
   Boxes,
   ClipboardCheck,
   Gauge,
   Landmark,
   LogOut,
+  Moon,
   PackageSearch,
   PanelLeft,
   Settings,
   Ship,
   ShoppingCart,
+  Sun,
 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -127,6 +131,7 @@ function AuthLayoutContent({
   const location = useLocation();
   const navigate = useNavigate();
   const { state, toggleSidebar, setOpenMobile } = useSidebar();
+  const { resolvedTheme, toggle: toggleTheme } = useTheme();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -187,10 +192,11 @@ function AuthLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   <span className="font-semibold tracking-tight truncate">
                     中澳运营台
                   </span>
+                  <ThemeToggle className="ml-auto" />
                 </div>
               ) : null}
             </div>
@@ -243,6 +249,17 @@ function AuthLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
+                  onClick={toggleTheme}
+                  className="cursor-pointer"
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  <span>{resolvedTheme === "dark" ? "切换到日间模式" : "切换到夜间模式"}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
@@ -276,6 +293,7 @@ function AuthLayoutContent({
                 </div>
               </div>
             </div>
+            <ThemeToggle />
           </div>
         )}
         <main className="flex-1 overflow-x-clip p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:p-4 lg:p-6">{children}</main>

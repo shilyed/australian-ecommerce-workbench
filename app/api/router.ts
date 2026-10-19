@@ -1,4 +1,5 @@
 import { authRouter } from "./auth-router";
+import { integrationsRouter } from "./integrations/router";
 import { createRouter, publicQuery } from "./middleware";
 import { storageRouter } from "./storage-router";
 import { workbenchRouter } from "./workbenchRouter";
@@ -6,6 +7,7 @@ import { workbenchRouter } from "./workbenchRouter";
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
   auth: authRouter,
+  integrations: integrationsRouter,
   workbench: workbenchRouter,
   storage: storageRouter,
 });

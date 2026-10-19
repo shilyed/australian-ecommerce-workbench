@@ -1,5 +1,6 @@
-import { type FormEvent, useState } from "react";
-import { KeyRound, PlugZap, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { KeyRound, Monitor, Moon, PlugZap, RefreshCw, ShieldCheck, Sun, Users } from "lucide-react";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/workbench/PageHeader";
 import { EmptyPanel, LoadingPanel } from "@/components/workbench/States";
 import { StatusPill } from "@/components/workbench/StatusPill";
+import { StoreIntegrationCard } from "@/components/workbench/StoreIntegrationCard";
 import { dateTime, label } from "@/lib/format";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { trpc } from "@/providers/trpc";
+import { useTheme } from "@/providers/theme-context";
 
 const ROLE_TEXT: Record<string, string> = {
   admin: "管理员：全部权限，含成员与写回设置",
@@ -46,6 +49,48 @@ export default function Settings() {
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledResult = useRef<string | null>(null);
+  const { mode, setMode, resolvedTheme } = useTheme();
+  const providerQuery = trpc.integrations.providers.useQuery({
+    origin: window.location.origin,
+  });
+  const refreshProfile = trpc.integrations.refreshProfile.useMutation({
+    onSuccess: async (profile) => {
+      toast.success(`已从 ${profile.platform === "etsy" ? "Etsy" : "eBay"} 读取最新店铺数据`);
+      await refresh();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const disconnectStore = trpc.integrations.disconnect.useMutation({
+    onSuccess: async () => {
+      toast.success("已断开官方授权，历史业务数据保留");
+      await refresh();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  useEffect(() => {
+    const status = searchParams.get("status");
+    const integration = searchParams.get("integration");
+    if (!status || !integration) return;
+    const resultKey = searchParams.toString();
+    if (handledResult.current === resultKey) return;
+    handledResult.current = resultKey;
+    const platformName = integration === "etsy" ? "Etsy" : "eBay";
+    if (status === "connected") {
+      toast.success(`${platformName} 店铺已连接：${searchParams.get("shop") ?? "已读取店铺信息"}`);
+    } else if (status === "cancelled") {
+      toast.info(`已取消 ${platformName} 授权，未做任何更改`);
+    } else if (status === "error") {
+      toast.error(`${platformName} 连接失败：${searchParams.get("message") ?? "未知错误"}`);
+    }
+    const next = new URLSearchParams(searchParams);
+    ["integration", "status", "shop", "message"].forEach((key) => next.delete(key));
+    setSearchParams(next, { replace: true });
+    void refresh();
+  }, [searchParams, setSearchParams, refresh]);
 
   if (isLoading) return <LoadingPanel />;
   if (error || !data) return <EmptyPanel title="设置加载失败" description={error?.message ?? "未知错误"} action={<Button onClick={() => refetch()}>重试</Button>} />;
@@ -89,12 +134,52 @@ export default function Settings() {
         </div>
       )}
 
+      <section className="ops-panel mb-4">
+        <div className="ops-panel-header">
+          <div>
+            <h2 className="ops-title flex items-center gap-2">
+              <PlugZap className="h-4 w-4 text-primary" />平台官方直连（Etsy / eBay）
+            </h2>
+            <p className="ops-subtitle">
+              用平台账号完成 OAuth 授权，工作台自动读取店铺名称、在售刊登、订单与额度；令牌加密存储在服务端，前端永远拿不到。
+            </p>
+          </div>
+          <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">OAuth 2.0</Badge>
+        </div>
+        <div className="grid gap-4 p-4 xl:grid-cols-2">
+          <StoreIntegrationCard
+            platform="etsy"
+            provider={providerQuery.data?.providers.find((provider) => provider.platform === "etsy")}
+            providerLoading={providerQuery.isLoading}
+            stores={data.stores.filter((store) => store.platform === "etsy")}
+            isAdmin={isAdmin}
+            onRefresh={(storeId) => refreshProfile.mutate({ storeConnectionId: storeId })}
+            onDisconnect={(storeId) => disconnectStore.mutate({ storeConnectionId: storeId })}
+            refreshPending={refreshProfile.isPending}
+            disconnectPending={disconnectStore.isPending}
+          />
+          <StoreIntegrationCard
+            platform="ebay"
+            provider={providerQuery.data?.providers.find((provider) => provider.platform === "ebay")}
+            providerLoading={providerQuery.isLoading}
+            stores={data.stores.filter((store) => store.platform === "ebay")}
+            isAdmin={isAdmin}
+            onRefresh={(storeId) => refreshProfile.mutate({ storeConnectionId: storeId })}
+            onDisconnect={(storeId) => disconnectStore.mutate({ storeConnectionId: storeId })}
+            refreshPending={refreshProfile.isPending}
+            disconnectPending={disconnectStore.isPending}
+          />
+        </div>
+      </section>
+
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="ops-panel">
           <div className="ops-panel-header">
             <div>
-              <h2 className="ops-title flex items-center gap-2"><PlugZap className="h-4 w-4 text-primary" />店铺连接与授权</h2>
-              <p className="ops-subtitle">诚实呈现授权状态：未连接 / 已授权 / 已过期 / 已撤销，绝不伪装同步成功</p>
+              <h2 className="ops-title flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" />手工登记店铺（兜底）</h2>
+              <p className="ops-subtitle">
+                没有官方应用凭证时的兜底方案：只登记元数据，不会访问平台接口。优先使用上方的官方直连。
+              </p>
             </div>
           </div>
           <div className="space-y-3 p-4">
@@ -125,7 +210,10 @@ export default function Settings() {
 
           {isAdmin && (
             <form onSubmit={submitStore} className="space-y-3 border-t border-border/60 p-4">
-              <p className="text-sm font-semibold">登记 / 更新店铺连接（管理员）</p>
+              <p className="text-sm font-semibold">登记 / 更新店铺元数据（管理员）</p>
+              <p className="text-xs leading-5 text-muted-foreground">
+                已通过 OAuth 直连的店铺，其授权状态由平台令牌决定，手工表单不会覆盖。
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="ops-label" htmlFor="platform">平台</label>
@@ -325,6 +413,43 @@ export default function Settings() {
           </div>
           <div className="border-t border-border/60 p-4 text-xs leading-5 text-muted-foreground">
             数据边界：买家地址仅在订单与履约流程内按权限展示；附件经服务端私有存储访问；令牌与凭证不会进入前端或审计日志；新西兰等非澳洲目的地的订单会被标记为超范围并阻断常规发货。
+          </div>
+        </section>
+
+        <section className="ops-panel xl:col-span-2">
+          <div className="ops-panel-header">
+            <div>
+              <h2 className="ops-title flex items-center gap-2">
+                {resolvedTheme === "dark" ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
+                外观与可读性
+              </h2>
+              <p className="ops-subtitle">默认跟随系统；选择会保存在本机，并在下次打开时于首屏渲染前生效</p>
+            </div>
+            <Badge variant="outline" className="text-muted-foreground">
+              当前：{resolvedTheme === "dark" ? "夜间" : "日间"}
+            </Badge>
+          </div>
+          <div className="grid gap-2 p-4 sm:grid-cols-3">
+            {([
+              { value: "system", title: "跟随系统", icon: Monitor },
+              { value: "light", title: "日间模式", icon: Sun },
+              { value: "dark", title: "夜间模式", icon: Moon },
+            ] as const).map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={mode === option.value ? "default" : "outline"}
+                className="min-h-12 justify-start"
+                onClick={() => setMode(option.value)}
+                aria-pressed={mode === option.value}
+              >
+                <option.icon className="mr-2 h-4 w-4" />
+                {option.title}
+              </Button>
+            ))}
+          </div>
+          <div className="border-t border-border/60 p-4 text-xs leading-5 text-muted-foreground">
+            夜间模式沿用深海军蓝 + 青色高亮；日间模式使用冷灰底 + 深青主色，并单独压暗了状态标签颜色，保证表格在强光环境下仍然清晰。
           </div>
         </section>
       </div>

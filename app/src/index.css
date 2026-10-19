@@ -5,7 +5,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* 夜间模式（默认）：深海军蓝 + 青色高亮 */
+  :root,
+  .dark {
     --background: 222 52% 4%;
     --foreground: 200 33% 95%;
     --card: 222 42% 9%;
@@ -34,6 +36,57 @@
     --sidebar-accent-foreground: 200 33% 95%;
     --sidebar-border: 223 42% 16%;
     --sidebar-ring: 187 92% 55%;
+
+    --glow-primary: rgba(34, 211, 238, 0.11);
+    --glow-secondary: rgba(251, 191, 36, 0.06);
+    --scanline: rgba(255, 255, 255, 0.018);
+    --panel-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+    --scrollbar-thumb: rgba(148, 163, 184, 0.28);
+    --scrollbar-thumb-hover: rgba(34, 211, 238, 0.45);
+    --selection: rgba(34, 211, 238, 0.28);
+    --theme-color: #050810;
+    color-scheme: dark;
+  }
+
+  /* 日间模式：低饱和冷灰底 + 深青主色，保证表格与状态标签的对比度 */
+  html.light {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 190 95% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 28% 25%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 43%;
+    --accent: 187 72% 94%;
+    --accent-foreground: 190 90% 22%;
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 30% 89%;
+    --input: 214 30% 86%;
+    --ring: 190 95% 34%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 32%;
+    --sidebar-primary: 190 95% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 30% 90%;
+    --sidebar-ring: 190 95% 34%;
+
+    --glow-primary: rgba(8, 145, 178, 0.1);
+    --glow-secondary: rgba(245, 158, 11, 0.07);
+    --scanline: rgba(15, 23, 42, 0.02);
+    --panel-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+    --scrollbar-thumb: rgba(100, 116, 139, 0.32);
+    --scrollbar-thumb-hover: rgba(8, 145, 178, 0.45);
+    --selection: rgba(8, 145, 178, 0.18);
+    --theme-color: #f8fafc;
+    color-scheme: light;
   }
 }
 
@@ -43,7 +96,6 @@
   }
 
   html {
-    color-scheme: dark;
     min-height: 100dvh;
   }
 
@@ -53,9 +105,10 @@
     font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     font-feature-settings: 'tnum' 1, 'cv02' 1;
     background:
-      radial-gradient(circle at 20% -10%, rgba(34, 211, 238, 0.11), transparent 32rem),
-      radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.06), transparent 26rem),
+      radial-gradient(circle at 20% -10%, var(--glow-primary), transparent 32rem),
+      radial-gradient(circle at 100% 0%, var(--glow-secondary), transparent 26rem),
       hsl(var(--background));
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   body::before {
@@ -66,8 +119,8 @@
     pointer-events: none;
     background: repeating-linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0.018) 0,
-      rgba(255, 255, 255, 0.018) 1px,
+      var(--scanline) 0,
+      var(--scanline) 1px,
       transparent 1px,
       transparent 4px
     );
@@ -94,7 +147,7 @@
   }
 
   ::selection {
-    background: rgba(34, 211, 238, 0.28);
+    background: var(--selection);
   }
 
   ::-webkit-scrollbar {
@@ -107,18 +160,19 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.28);
+    background: var(--scrollbar-thumb);
     border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(34, 211, 238, 0.45);
+    background: var(--scrollbar-thumb-hover);
   }
 }
 
 @layer components {
   .ops-panel {
-    @apply rounded-2xl border bg-card/90 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur;
+    @apply rounded-2xl border bg-card/90 backdrop-blur;
+    box-shadow: var(--panel-shadow);
   }
 
   .ops-panel-header {
@@ -206,4 +260,43 @@ body,
 .ops-table td,
 .ops-table th {
   overflow-wrap: anywhere;
+}
+
+/*
+ * 日间模式下压暗状态色。
+ * 页面里沿用了夜间模式的三百系颜色（text-red-300 等），它们在白底上对比度不足；
+ * 这里集中做一次语义化修正，避免逐页改 className 时漏改。
+ */
+html.light .text-red-300,
+html.light .text-red-200 {
+  color: hsl(0 72% 40%);
+}
+
+html.light .text-amber-300,
+html.light .text-amber-200 {
+  color: hsl(32 95% 30%);
+}
+
+html.light .text-emerald-300,
+html.light .text-emerald-200,
+html.light .hover\:text-emerald-200:hover {
+  color: hsl(160 84% 24%);
+}
+
+html.light .text-cyan-300,
+html.light .text-cyan-200 {
+  color: hsl(190 90% 27%);
+}
+
+html.light .text-slate-300 {
+  color: hsl(215 25% 38%);
+}
+
+html.light .text-fuchsia-200 {
+  color: hsl(292 84% 38%);
+}
+
+/* 日间模式下白色侧边栏与内容区需要一条可见的边界 */
+html.light [data-sidebar="sidebar"] {
+  box-shadow: 0 0 0 1px hsl(var(--sidebar-border)), 0 10px 30px rgba(15, 23, 42, 0.04);
 }

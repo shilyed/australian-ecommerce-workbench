@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, RefreshCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUpRight, CheckCircle2, Clock3, RefreshCw, ShieldAlert, Store } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/workbench/PageHeader";
 import { EmptyPanel, LoadingPanel } from "@/components/workbench/States";
 import { StatusPill } from "@/components/workbench/StatusPill";
-import { dateTime, label, money, routeForBusiness } from "@/lib/format";
+import { dateTime, label, money, numberFmt, routeForBusiness } from "@/lib/format";
 import { trpc } from "@/providers/trpc";
 
 function Metric({ labelText, value, detail, tone = "text-foreground" }: { labelText: string; value: string | number; detail: string; tone?: string }) {
@@ -58,6 +58,89 @@ export default function Dashboard() {
         <Metric labelText="缺货 / 未匹配" value={`${data.counts.shortage} / ${data.counts.unmatched}`} detail="缺货独立展示，不用负库存掩盖" />
         <Metric labelText="利润已核实" value={`${data.counts.verifiedProfitOrders}/${data.counts.totalProfitOrders}`} detail="晚到费用会自动撤销核实状态" tone="text-emerald-300" />
       </div>
+
+      <section className="ops-panel mt-4">
+        <div className="ops-panel-header">
+          <div>
+            <h2 className="ops-title flex items-center gap-2"><Store className="h-4 w-4 text-primary" />店铺概览</h2>
+            <p className="ops-subtitle">Etsy / eBay 官方授权的实时快照；未直连时明确标注，不用静态数字伪装实时</p>
+          </div>
+          <Button asChild variant="ghost" size="sm" className="min-h-9">
+            <Link to="/settings">管理连接<ArrowRight className="ml-1 h-4 w-4" /></Link>
+          </Button>
+        </div>
+        <div className="grid gap-3 p-4 sm:grid-cols-2">
+          {data.stores.map((store) => {
+            const profile = store.profile;
+            return (
+              <article key={store.id} className="rounded-xl border border-border/70 bg-secondary/30 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={store.platform === "etsy"
+                        ? "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-300"
+                        : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-300"}>
+                        {store.platform === "etsy" ? "Etsy" : "eBay"}
+                      </Badge>
+                      <span className="truncate font-semibold">{store.shopName}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {store.hasCredentials ? "官方 OAuth 直连" : "手工登记 · 无实时数据"}
+                      {store.accountLabel ? ` · ${store.accountLabel}` : ""}
+                    </p>
+                  </div>
+                  <StatusPill value={store.authorizationStatus} />
+                </div>
+
+                {profile ? (
+                  <>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-2">
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">在售刊登</p>
+                        <p className="mt-1 font-mono text-sm" data-number="true">{profile.listingCount === null ? "—" : numberFmt(profile.listingCount)}</p>
+                      </div>
+                      <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-2">
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{store.platform === "ebay" ? "90 天订单" : "店铺订单"}</p>
+                        <p className="mt-1 font-mono text-sm" data-number="true">{profile.orderCount === null ? "—" : numberFmt(profile.orderCount)}</p>
+                      </div>
+                      <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-2">
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{store.platform === "etsy" ? "累计销量" : "销售额度"}</p>
+                        <p className="mt-1 truncate font-mono text-sm" data-number="true" title={String(store.platform === "etsy" ? profile.soldCount ?? "—" : profile.sellingLimitAmount ?? "—")}>
+                          {store.platform === "etsy"
+                            ? profile.soldCount === null ? "—" : numberFmt(profile.soldCount)
+                            : profile.sellingLimitAmount === null ? "—" : numberFmt(profile.sellingLimitAmount)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      <span>数据时间：{dateTime(store.profileSyncedAt ?? profile.fetchedAt)}</span>
+                      <span>币种：{profile.currency ?? "—"}</span>
+                      {profile.shopUrl && (
+                        <a className="inline-flex items-center gap-1 text-primary hover:underline" href={profile.shopUrl} target="_blank" rel="noreferrer">
+                          打开店铺<ArrowUpRight className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-3 rounded-lg border border-dashed border-border p-3 text-xs leading-5 text-muted-foreground">
+                    尚无平台实时数据。到「系统设置 → 平台官方直连」用 {store.platform === "etsy" ? "Etsy" : "eBay"} 账号授权后自动读取。
+                  </p>
+                )}
+              </article>
+            );
+          })}
+          {data.stores.length === 0 && (
+            <div className="rounded-xl border border-dashed border-border p-6 text-center sm:col-span-2">
+              <Store className="mx-auto h-6 w-6 text-muted-foreground" />
+              <p className="mt-2 text-sm text-muted-foreground">还没有连接任何店铺。</p>
+              <Button asChild variant="outline" className="mt-3 min-h-10">
+                <Link to="/settings">去连接 Etsy / eBay</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_380px]">
         <aside className="ops-panel">

@@ -25,6 +25,7 @@ import {
   shipments,
   skus,
   storeConnections,
+  storeCredentials,
   suppliers,
   syncJobs,
   tasks,
@@ -33,6 +34,7 @@ import {
 } from "@db/schema";
 import { getDb } from "./queries/connection";
 import { adminQuery, authedQuery, createRouter } from "./middleware";
+import type { StoreProfile } from "./integrations/types";
 
 const currencySchema = z.enum(["CNY", "AUD", "USD"]);
 const platformSchema = z.enum(["etsy", "ebay"]);
@@ -335,6 +337,15 @@ async function allocateOrder(tx: Tx, orderId: number, actorId: number) {
   return { allocated: 1, shortage: anyShortage ? 1 : 0 };
 }
 
+function parseStoreProfile(raw: string | null): StoreProfile | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoreProfile;
+  } catch {
+    return null;
+  }
+}
+
 async function buildWorkspace(user: User) {
   const db = getDb();
   const financeAllowed = can(user, "finance", false);
@@ -366,6 +377,7 @@ async function buildWorkspace(user: User) {
     noteRows,
     auditRows,
     userRows,
+    credentialRows,
   ] = await Promise.all([
     db.select().from(suppliers).orderBy(desc(suppliers.updatedAt)),
     db.select().from(productCandidates).orderBy(desc(productCandidates.updatedAt)),
@@ -394,6 +406,7 @@ async function buildWorkspace(user: User) {
     db.select().from(notes).orderBy(desc(notes.createdAt)),
     db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)),
     db.select({ id: users.id, name: users.name, email: users.email, businessRole: users.businessRole, status: users.status, role: users.role }).from(users),
+    db.select({ storeConnectionId: storeCredentials.storeConnectionId }).from(storeCredentials),
   ]);
 
   const purchaseOrdersJoined = poRows.map((po) => ({
@@ -511,7 +524,11 @@ async function buildWorkspace(user: User) {
     allocations: financeAllowed ? allocationRows : [],
     settlements: financeAllowed ? settlementRows : [],
     report,
-    stores: storeRows,
+    stores: storeRows.map(({ profileSummary, ...store }) => ({
+      ...store,
+      hasCredentials: credentialRows.some((row) => row.storeConnectionId === store.id),
+      profile: parseStoreProfile(profileSummary),
+    })),
     syncJobs: syncRows,
     tasks: taskRows.map((task) => ({ ...task, owner: userRows.find((member) => member.id === task.ownerId) ?? null })),
     notes: noteRows,
@@ -561,6 +578,7 @@ export const workbenchRouter = createRouter({
       dueSoon,
       lowStock,
       syncIssues,
+      stores: workspace.stores,
       counts: {
         unmatched: workspace.orders.filter((order) => order.internalStatus === "matching").length,
         shortage: workspace.orders.filter((order) => order.internalStatus === "shortage").length,
@@ -1724,20 +1742,40 @@ export const workbenchRouter = createRouter({
       if ((input.shippingWritebackEnabled || input.inventoryWritebackEnabled) && !input.writebackMode) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "开启写回前必须选择系统主控或人工确认" });
       }
+      // OAuth 直连店铺的授权状态由平台令牌决定，手工表单不得覆盖
+      const [existingStore] = await db
+        .select({ id: storeConnections.id })
+        .from(storeConnections)
+        .where(
+          and(
+            eq(storeConnections.platform, input.platform),
+            eq(storeConnections.externalShopId, input.externalShopId),
+          ),
+        )
+        .limit(1);
+      let authorizationStatus = input.authorizationStatus;
+      if (existingStore) {
+        const [credential] = await db
+          .select({ id: storeCredentials.id })
+          .from(storeCredentials)
+          .where(eq(storeCredentials.storeConnectionId, existingStore.id))
+          .limit(1);
+        if (credential) authorizationStatus = "authorized";
+      }
       await db
         .insert(storeConnections)
-        .values(input)
+        .values({ ...input, authorizationStatus })
         .onDuplicateKeyUpdate({
           set: {
             shopName: input.shopName,
-            authorizationStatus: input.authorizationStatus,
+            authorizationStatus,
             shippingWritebackEnabled: input.shippingWritebackEnabled,
             inventoryWritebackEnabled: input.inventoryWritebackEnabled,
             writebackMode: input.writebackMode,
             errorSummary: input.errorSummary,
           },
         });
-      await audit(db, ctx.user.id, "store.connection.update", "store", `${input.platform}:${input.externalShopId}`, undefined, input, "高风险配置变更");
+      await audit(db, ctx.user.id, "store.connection.update", "store", `${input.platform}:${input.externalShopId}`, undefined, { ...input, authorizationStatus }, "高风险配置变更");
       return { ok: true };
     }),
 

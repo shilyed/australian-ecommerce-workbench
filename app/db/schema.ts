@@ -613,9 +613,37 @@ export const storeConnections = mysqlTable(
     shippingWritebackEnabled: boolean("shippingWritebackEnabled").default(false).notNull(),
     inventoryWritebackEnabled: boolean("inventoryWritebackEnabled").default(false).notNull(),
     writebackMode: mysqlEnum("writebackMode", ["system_controlled", "manual_confirm"]),
+    // 官方 OAuth 直连后写入的账号快照。凭证本身保存在 store_credentials，绝不随 workspace 查询返回。
+    externalAccountId: varchar("externalAccountId", { length: 255 }),
+    accountLabel: varchar("accountLabel", { length: 255 }),
+    connectedBy: bigint("connectedBy", { mode: "number", unsigned: true }),
+    connectedAt: timestamp("connectedAt"),
+    profileSyncedAt: timestamp("profileSyncedAt"),
+    profileSummary: text("profileSummary"),
     ...timestamps,
   },
   (table) => [uniqueIndex("store_connection_key").on(table.platform, table.externalShopId)],
+);
+
+/**
+ * 平台 OAuth 凭证。accessToken / refreshToken 使用 AES-256-GCM 加密后存储，
+ * 仅服务端集成模块可读取；任何 tRPC 查询都不会 select 本表。
+ */
+export const storeCredentials = mysqlTable(
+  "store_credentials",
+  {
+    id: serial("id").primaryKey(),
+    storeConnectionId: bigint("storeConnectionId", { mode: "number", unsigned: true }).notNull(),
+    platform: mysqlEnum("platform", ["etsy", "ebay"]).notNull(),
+    accessToken: text("accessToken").notNull(),
+    refreshToken: text("refreshToken"),
+    tokenExpiresAt: timestamp("tokenExpiresAt"),
+    scopes: text("scopes"),
+    tokenType: varchar("tokenType", { length: 32 }),
+    lastRefreshedAt: timestamp("lastRefreshedAt"),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex("store_credentials_store_key").on(table.storeConnectionId)],
 );
 
 export const syncJobs = mysqlTable(
