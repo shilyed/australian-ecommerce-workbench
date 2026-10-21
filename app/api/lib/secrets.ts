@@ -15,7 +15,7 @@ import { env } from "./env";
  */
 const TOKEN_KEY = createHash("sha256").update(`aew/store-token/v1:${env.appSecret}`).digest();
 const STATE_KEY = createHash("sha256").update(`aew/oauth-state/v1:${env.appSecret}`).digest();
-const STATE_TTL = "10m";
+const STATE_TTL = "30m";
 
 function b64url(buffer: Buffer): string {
   return buffer.toString("base64url");

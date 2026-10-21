@@ -41,6 +41,13 @@ function ebayBaseUrl(): string {
     : "https://api.ebay.com";
 }
 
+function ebayIdentityBaseUrl(): string {
+  // Identity API is hosted on apiz.ebay.com, unlike the Sell APIs on api.ebay.com.
+  return integrationEnv.ebay.environment === "sandbox"
+    ? "https://apiz.sandbox.ebay.com"
+    : "https://apiz.ebay.com";
+}
+
 function ebayAuthorizeUrl(): string {
   return integrationEnv.ebay.environment === "sandbox"
     ? "https://auth.sandbox.ebay.com/oauth2/authorize"
@@ -426,9 +433,13 @@ async function ebayRefresh(refreshToken: string): Promise<TokenSet> {
   };
 }
 
-async function ebayGet<T>(path: string, accessToken: string): Promise<T> {
+async function ebayGet<T>(
+  path: string,
+  accessToken: string,
+  baseUrl = ebayBaseUrl(),
+): Promise<T> {
   return requestJson<T>(
-    `${ebayBaseUrl()}${path}`,
+    `${baseUrl}${path}`,
     {
       headers: {
         Accept: "application/json",
@@ -456,7 +467,11 @@ type EbayPrivilege = {
 
 async function ebayProfile(accessToken: string): Promise<StoreProfile> {
   const notes: string[] = [];
-  const identity = await ebayGet<EbayIdentity>("/commerce/identity/v1/user/", accessToken);
+  const identity = await ebayGet<EbayIdentity>(
+    "/commerce/identity/v1/user/",
+    accessToken,
+    ebayIdentityBaseUrl(),
+  );
   const userId = asString(identity.userId);
   const username = asString(identity.username);
   if (!userId) {
