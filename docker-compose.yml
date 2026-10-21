@@ -1,0 +1,94 @@
+name: australian-ecommerce-workbench
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aew}
+      MYSQL_USER: ${MYSQL_USER:-aew}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      TZ: Australia/Sydney
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # 一次性数据库结构初始化。首次部署和每次升级后显式执行：
+  # docker compose --profile tools run --rm db-init
+  db-init:
+    build:
+      context: ./app
+      target: build
+    profiles: ["tools"]
+    command: ["npm", "run", "db:push"]
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-aew}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-aew}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  app:
+    build:
+      context: ./app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: mysql://${MYSQL_USER:-aew}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-aew}
+      STORAGE_DIR: /app/data/uploads
+    volumes:
+      - app_data:/app/data
+    depends_on:
+      mysql:
+        condition: service_healthy
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  app_data:
+  caddy_data:
+  caddy_config:

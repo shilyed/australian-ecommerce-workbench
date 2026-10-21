@@ -7,7 +7,7 @@
  *
  * 注意：
  * - 这是不可逆操作，请先备份。
- * - 只清理数据库行；对象存储里的附件（files 表对应的 S3 对象）不会被删除。
+ * - 只清理数据库行；自托管附件目录里的文件不会被删除。
  */
 import "dotenv/config";
 import mysql from "mysql2/promise";
@@ -41,6 +41,7 @@ const TABLES = [
   "notes",
   "audit_logs",
   "files",
+  "local_accounts",
   "users",
 ];
 
@@ -56,7 +57,7 @@ if (!confirmed) {
       "  npm run db:reset -- --yes --keep-users    # 保留登录用户",
       "",
       "确认无误后请追加 --yes 重新执行。",
-    ].join("\n"),
+    ].join("\n")
   );
   process.exit(1);
 }
@@ -66,7 +67,9 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-const targets = TABLES.filter((table) => !(keepUsers && table === "users"));
+const targets = TABLES.filter(
+  table => !(keepUsers && (table === "users" || table === "local_accounts"))
+);
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
 
 try {
@@ -77,7 +80,7 @@ try {
   }
   await connection.query("SET FOREIGN_KEY_CHECKS = 1");
   console.log(`\nDone. Cleared ${targets.length} tables.`);
-  if (keepUsers) console.log("users 表已保留。");
+  if (keepUsers) console.log("users 与 local_accounts 表已保留。");
 } finally {
   await connection.end();
 }

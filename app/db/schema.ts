@@ -29,10 +29,17 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   avatar: text("avatar"),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  businessRole: mysqlEnum("businessRole", ["admin", "operations", "fulfillment", "finance"])
+  businessRole: mysqlEnum("businessRole", [
+    "admin",
+    "operations",
+    "fulfillment",
+    "finance",
+  ])
     .default("operations")
     .notNull(),
-  status: mysqlEnum("status", ["active", "disabled"]).default("active").notNull(),
+  status: mysqlEnum("status", ["active", "disabled"])
+    .default("active")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()
@@ -40,6 +47,30 @@ export const users = mysqlTable("users", {
     .$onUpdate(() => new Date()),
   lastSignInAt: timestamp("lastSignInAt").defaultNow().notNull(),
 });
+
+/**
+ * 自托管账户凭据。与 users 分开存放，既避免把密码散列混入业务用户读模型，
+ * 也允许原有 Kimi 用户在不改表结构的情况下逐步迁移到邮箱密码登录。
+ */
+export const localAccounts = mysqlTable(
+  "local_accounts",
+  {
+    id: serial("id").primaryKey(),
+    userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+    sessionVersion: int("sessionVersion").default(0).notNull(),
+    failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
+    lockedUntil: timestamp("lockedUntil"),
+    passwordChangedAt: timestamp("passwordChangedAt").defaultNow().notNull(),
+    lastLoginAt: timestamp("lastLoginAt"),
+    ...timestamps,
+  },
+  table => [
+    uniqueIndex("local_accounts_user_key").on(table.userId),
+    uniqueIndex("local_accounts_email_key").on(table.email),
+  ]
+);
 
 export const files = mysqlTable(
   "files",
@@ -52,7 +83,7 @@ export const files = mysqlTable(
     contentType: varchar("contentType", { length: 255 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("files_owner_idx").on(table.ownerId)],
+  table => [index("files_owner_idx").on(table.ownerId)]
 );
 
 export const suppliers = mysqlTable("suppliers", {
@@ -71,9 +102,14 @@ export const productCandidates = mysqlTable(
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     sourceUrl: varchar("sourceUrl", { length: 1024 }).notNull(),
-    supplierId: bigint("supplierId", { mode: "number", unsigned: true }).notNull(),
+    supplierId: bigint("supplierId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     spec: varchar("spec", { length: 512 }).notNull(),
-    currency: mysqlEnum("currency", ["CNY", "AUD", "USD"]).default("CNY").notNull(),
+    currency: mysqlEnum("currency", ["CNY", "AUD", "USD"])
+      .default("CNY")
+      .notNull(),
     quote: decimal("quote", { precision: 14, scale: 2 }).notNull(),
     moq: int("moq"),
     leadTimeDays: int("leadTimeDays"),
@@ -96,21 +132,40 @@ export const productCandidates = mysqlTable(
     sampleScore: int("sampleScore"),
     sampleReview: text("sampleReview"),
     decisionNote: text("decisionNote"),
-    etsyStatus: mysqlEnum("etsyStatus", ["pending", "assess", "approved", "rejected"])
+    etsyStatus: mysqlEnum("etsyStatus", [
+      "pending",
+      "assess",
+      "approved",
+      "rejected",
+    ])
       .default("pending")
       .notNull(),
-    ebayStatus: mysqlEnum("ebayStatus", ["pending", "assess", "approved", "rejected"])
+    ebayStatus: mysqlEnum("ebayStatus", [
+      "pending",
+      "assess",
+      "approved",
+      "rejected",
+    ])
       .default("pending")
       .notNull(),
     complianceBasis: text("complianceBasis"),
     complianceCheckedAt: timestamp("complianceCheckedAt"),
     confirmedById: bigint("confirmedById", { mode: "number", unsigned: true }),
     attachmentKeys: json("attachmentKeys").$type<string[]>(),
-    convertedSkuId: bigint("convertedSkuId", { mode: "number", unsigned: true }),
-    operatorId: bigint("operatorId", { mode: "number", unsigned: true }).notNull(),
+    convertedSkuId: bigint("convertedSkuId", {
+      mode: "number",
+      unsigned: true,
+    }),
+    operatorId: bigint("operatorId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     ...timestamps,
   },
-  (table) => [index("candidate_source_idx").on(table.sourceUrl), index("candidate_supplier_idx").on(table.supplierId)],
+  table => [
+    index("candidate_source_idx").on(table.sourceUrl),
+    index("candidate_supplier_idx").on(table.supplierId),
+  ]
 );
 
 export const skus = mysqlTable(
@@ -131,11 +186,13 @@ export const skus = mysqlTable(
     material: varchar("material", { length: 255 }),
     originCountry: varchar("originCountry", { length: 100 }),
     hsCode: varchar("hsCode", { length: 100 }),
-    status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+    status: mysqlEnum("status", ["active", "inactive"])
+      .default("active")
+      .notNull(),
     alertThreshold: int("alertThreshold").default(0).notNull(),
     ...timestamps,
   },
-  (table) => [index("sku_status_idx").on(table.status)],
+  table => [index("sku_status_idx").on(table.status)]
 );
 
 export const channelListings = mysqlTable(
@@ -151,22 +208,26 @@ export const channelListings = mysqlTable(
     title: varchar("title", { length: 512 }).notNull(),
     url: varchar("url", { length: 1024 }),
     price: decimal("price", { precision: 14, scale: 2 }).notNull(),
-    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"]).default("AUD").notNull(),
+    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"])
+      .default("AUD")
+      .notNull(),
     shippingInfo: varchar("shippingInfo", { length: 512 }),
-    platformStatus: varchar("platformStatus", { length: 255 }).default("unknown").notNull(),
+    platformStatus: varchar("platformStatus", { length: 255 })
+      .default("unknown")
+      .notNull(),
     lastSyncAt: timestamp("lastSyncAt"),
     rawSnapshot: json("rawSnapshot").$type<Record<string, unknown>>(),
     ...timestamps,
   },
-  (table) => [
+  table => [
     uniqueIndex("listing_external_key").on(
       table.platform,
       table.externalShopId,
       table.externalListingId,
-      table.externalVariantId,
+      table.externalVariantId
     ),
     index("listing_sku_idx").on(table.skuId),
-  ],
+  ]
 );
 
 export const purchaseOrders = mysqlTable(
@@ -174,51 +235,77 @@ export const purchaseOrders = mysqlTable(
   {
     id: serial("id").primaryKey(),
     internalNo: varchar("internalNo", { length: 128 }).notNull().unique(),
-    supplierId: bigint("supplierId", { mode: "number", unsigned: true }).notNull(),
+    supplierId: bigint("supplierId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     externalOrderNo: varchar("externalOrderNo", { length: 255 }),
     externalOrderUrl: varchar("externalOrderUrl", { length: 1024 }),
     orderedAt: timestamp("orderedAt"),
     expectedArrivalAt: timestamp("expectedArrivalAt"),
     ownerId: bigint("ownerId", { mode: "number", unsigned: true }).notNull(),
-    flowStatus: mysqlEnum("flowStatus", ["draft", "ordered", "closed", "cancelled"])
+    flowStatus: mysqlEnum("flowStatus", [
+      "draft",
+      "ordered",
+      "closed",
+      "cancelled",
+    ])
       .default("draft")
       .notNull(),
-    receiveStatus: mysqlEnum("receiveStatus", ["none", "partial", "full"]).default("none").notNull(),
+    receiveStatus: mysqlEnum("receiveStatus", ["none", "partial", "full"])
+      .default("none")
+      .notNull(),
     notes: text("notes"),
     closeReason: text("closeReason"),
     attachmentKeys: json("attachmentKeys").$type<string[]>(),
     ...timestamps,
   },
-  (table) => [
-    uniqueIndex("po_supplier_external_idx").on(table.supplierId, table.externalOrderNo),
+  table => [
+    uniqueIndex("po_supplier_external_idx").on(
+      table.supplierId,
+      table.externalOrderNo
+    ),
     index("po_status_idx").on(table.flowStatus, table.receiveStatus),
-  ],
+  ]
 );
 
 export const purchaseOrderLines = mysqlTable(
   "purchase_order_lines",
   {
     id: serial("id").primaryKey(),
-    purchaseOrderId: bigint("purchaseOrderId", { mode: "number", unsigned: true }).notNull(),
+    purchaseOrderId: bigint("purchaseOrderId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     skuId: bigint("skuId", { mode: "number", unsigned: true }).notNull(),
     supplierSpec: varchar("supplierSpec", { length: 512 }).notNull(),
     quantity: int("quantity").notNull(),
     receivedQty: int("receivedQty").default(0).notNull(),
     closedQty: int("closedQty").default(0).notNull(),
     unitPrice: decimal("unitPrice", { precision: 14, scale: 4 }).notNull(),
-    currency: mysqlEnum("currency", ["CNY", "AUD", "USD"]).default("CNY").notNull(),
-    discount: decimal("discount", { precision: 14, scale: 2 }).default("0").notNull(),
+    currency: mysqlEnum("currency", ["CNY", "AUD", "USD"])
+      .default("CNY")
+      .notNull(),
+    discount: decimal("discount", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
     allocatedCostAud: decimal("allocatedCostAud", { precision: 14, scale: 4 }),
     ...timestamps,
   },
-  (table) => [index("po_line_po_idx").on(table.purchaseOrderId), index("po_line_sku_idx").on(table.skuId)],
+  table => [
+    index("po_line_po_idx").on(table.purchaseOrderId),
+    index("po_line_sku_idx").on(table.skuId),
+  ]
 );
 
 export const paymentRecords = mysqlTable(
   "payment_records",
   {
     id: serial("id").primaryKey(),
-    purchaseOrderId: bigint("purchaseOrderId", { mode: "number", unsigned: true }).notNull(),
+    purchaseOrderId: bigint("purchaseOrderId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     type: mysqlEnum("type", ["payment", "supplier_refund"]).notNull(),
     paidAt: timestamp("paidAt").notNull(),
     currency: mysqlEnum("currency", ["CNY", "AUD", "USD"]).notNull(),
@@ -226,33 +313,52 @@ export const paymentRecords = mysqlTable(
     referenceNo: varchar("referenceNo", { length: 255 }),
     voucherKey: varchar("voucherKey", { length: 512 }),
     note: text("note"),
-    recordedById: bigint("recordedById", { mode: "number", unsigned: true }).notNull(),
-    idempotencyKey: varchar("idempotencyKey", { length: 255 }).notNull().unique(),
+    recordedById: bigint("recordedById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 })
+      .notNull()
+      .unique(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("payment_po_idx").on(table.purchaseOrderId)],
+  table => [index("payment_po_idx").on(table.purchaseOrderId)]
 );
 
 export const goodsReceipts = mysqlTable(
   "goods_receipts",
   {
     id: serial("id").primaryKey(),
-    purchaseOrderId: bigint("purchaseOrderId", { mode: "number", unsigned: true }).notNull(),
+    purchaseOrderId: bigint("purchaseOrderId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     receivedAt: timestamp("receivedAt").notNull(),
     note: text("note"),
-    idempotencyKey: varchar("idempotencyKey", { length: 255 }).notNull().unique(),
-    postedById: bigint("postedById", { mode: "number", unsigned: true }).notNull(),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 })
+      .notNull()
+      .unique(),
+    postedById: bigint("postedById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("receipt_po_idx").on(table.purchaseOrderId)],
+  table => [index("receipt_po_idx").on(table.purchaseOrderId)]
 );
 
 export const goodsReceiptLines = mysqlTable(
   "goods_receipt_lines",
   {
     id: serial("id").primaryKey(),
-    goodsReceiptId: bigint("goodsReceiptId", { mode: "number", unsigned: true }).notNull(),
-    purchaseOrderLineId: bigint("purchaseOrderLineId", { mode: "number", unsigned: true }).notNull(),
+    goodsReceiptId: bigint("goodsReceiptId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    purchaseOrderLineId: bigint("purchaseOrderLineId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     skuId: bigint("skuId", { mode: "number", unsigned: true }).notNull(),
     receivedQty: int("receivedQty").notNull(),
     qualifiedQty: int("qualifiedQty").notNull(),
@@ -261,7 +367,7 @@ export const goodsReceiptLines = mysqlTable(
     overReceiptReason: text("overReceiptReason"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("receipt_line_receipt_idx").on(table.goodsReceiptId)],
+  table => [index("receipt_line_receipt_idx").on(table.goodsReceiptId)]
 );
 
 export const inventoryPositions = mysqlTable(
@@ -280,7 +386,9 @@ export const inventoryPositions = mysqlTable(
       .notNull()
       .$onUpdate(() => new Date()),
   },
-  (table) => [uniqueIndex("inventory_position_key").on(table.skuId, table.location)],
+  table => [
+    uniqueIndex("inventory_position_key").on(table.skuId, table.location),
+  ]
 );
 
 export const inventoryLots = mysqlTable(
@@ -290,7 +398,12 @@ export const inventoryLots = mysqlTable(
     skuId: bigint("skuId", { mode: "number", unsigned: true }).notNull(),
     location: varchar("location", { length: 128 }).default("MAIN").notNull(),
     batchCode: varchar("batchCode", { length: 128 }).notNull(),
-    sourceType: mysqlEnum("sourceType", ["purchase", "return", "adjustment", "initial"]).notNull(),
+    sourceType: mysqlEnum("sourceType", [
+      "purchase",
+      "return",
+      "adjustment",
+      "initial",
+    ]).notNull(),
     sourceId: bigint("sourceId", { mode: "number", unsigned: true }),
     receivedAt: timestamp("receivedAt").notNull(),
     qtyRemaining: int("qtyRemaining").default(0).notNull(),
@@ -298,13 +411,19 @@ export const inventoryLots = mysqlTable(
     unqualifiedRemaining: int("unqualifiedRemaining").default(0).notNull(),
     unitCostCny: decimal("unitCostCny", { precision: 14, scale: 4 }),
     unitCostAud: decimal("unitCostAud", { precision: 14, scale: 4 }),
-    costStatus: mysqlEnum("costStatus", ["complete", "missing"]).default("missing").notNull(),
+    costStatus: mysqlEnum("costStatus", ["complete", "missing"])
+      .default("missing")
+      .notNull(),
     ...timestamps,
   },
-  (table) => [
-    uniqueIndex("inventory_lot_key").on(table.skuId, table.location, table.batchCode),
+  table => [
+    uniqueIndex("inventory_lot_key").on(
+      table.skuId,
+      table.location,
+      table.batchCode
+    ),
     index("inventory_lot_fifo_idx").on(table.skuId, table.receivedAt),
-  ],
+  ]
 );
 
 export const inventoryLedger = mysqlTable(
@@ -333,11 +452,16 @@ export const inventoryLedger = mysqlTable(
     businessId: bigint("businessId", { mode: "number", unsigned: true }),
     unitCostAud: decimal("unitCostAud", { precision: 14, scale: 4 }),
     reason: text("reason"),
-    idempotencyKey: varchar("idempotencyKey", { length: 255 }).notNull().unique(),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 })
+      .notNull()
+      .unique(),
     actorId: bigint("actorId", { mode: "number", unsigned: true }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("ledger_sku_idx").on(table.skuId, table.createdAt), index("ledger_business_idx").on(table.businessType, table.businessId)],
+  table => [
+    index("ledger_sku_idx").on(table.skuId, table.createdAt),
+    index("ledger_business_idx").on(table.businessType, table.businessId),
+  ]
 );
 
 export const salesOrders = mysqlTable(
@@ -354,7 +478,13 @@ export const salesOrders = mysqlTable(
     postalCode: varchar("postalCode", { length: 64 }),
     addressSummary: varchar("addressSummary", { length: 512 }),
     rawStatus: varchar("rawStatus", { length: 255 }).notNull(),
-    paymentStatus: mysqlEnum("paymentStatus", ["unpaid", "paid", "partial_refund", "refunded", "unknown"])
+    paymentStatus: mysqlEnum("paymentStatus", [
+      "unpaid",
+      "paid",
+      "partial_refund",
+      "refunded",
+      "unknown",
+    ])
       .default("unknown")
       .notNull(),
     internalStatus: mysqlEnum("internalStatus", [
@@ -369,17 +499,35 @@ export const salesOrders = mysqlTable(
     ])
       .default("pending")
       .notNull(),
-    fulfillmentStatus: mysqlEnum("fulfillmentStatus", ["unshipped", "partial", "full"])
+    fulfillmentStatus: mysqlEnum("fulfillmentStatus", [
+      "unshipped",
+      "partial",
+      "full",
+    ])
       .default("unshipped")
       .notNull(),
-    afterSalesStatus: mysqlEnum("afterSalesStatus", ["none", "open", "closed"]).default("none").notNull(),
-    syncStatus: mysqlEnum("syncStatus", ["normal", "delayed", "failed", "auth_invalid"])
+    afterSalesStatus: mysqlEnum("afterSalesStatus", ["none", "open", "closed"])
+      .default("none")
+      .notNull(),
+    syncStatus: mysqlEnum("syncStatus", [
+      "normal",
+      "delayed",
+      "failed",
+      "auth_invalid",
+    ])
       .default("normal")
       .notNull(),
-    profitStatus: mysqlEnum("profitStatus", ["estimated", "incomplete", "verified"])
+    profitStatus: mysqlEnum("profitStatus", [
+      "estimated",
+      "incomplete",
+      "verified",
+    ])
       .default("incomplete")
       .notNull(),
-    profitVerifiedById: bigint("profitVerifiedById", { mode: "number", unsigned: true }),
+    profitVerifiedById: bigint("profitVerifiedById", {
+      mode: "number",
+      unsigned: true,
+    }),
     profitVerifiedAt: timestamp("profitVerifiedAt"),
     profitRevisionReason: text("profitRevisionReason"),
     orderedAt: timestamp("orderedAt").notNull(),
@@ -387,49 +535,76 @@ export const salesOrders = mysqlTable(
     shipBy: timestamp("shipBy"),
     internalShipBy: timestamp("internalShipBy"),
     ownerId: bigint("ownerId", { mode: "number", unsigned: true }),
-    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"]).default("AUD").notNull(),
+    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"])
+      .default("AUD")
+      .notNull(),
     subtotal: decimal("subtotal", { precision: 14, scale: 2 }).notNull(),
-    shippingPaid: decimal("shippingPaid", { precision: 14, scale: 2 }).default("0").notNull(),
-    taxCollected: decimal("taxCollected", { precision: 14, scale: 2 }).default("0").notNull(),
-    discount: decimal("discount", { precision: 14, scale: 2 }).default("0").notNull(),
+    shippingPaid: decimal("shippingPaid", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
+    taxCollected: decimal("taxCollected", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
+    discount: decimal("discount", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
     total: decimal("total", { precision: 14, scale: 2 }).notNull(),
     note: text("note"),
     externalVersion: varchar("externalVersion", { length: 255 }),
     rawSnapshot: json("rawSnapshot").$type<Record<string, unknown>>(),
     ...timestamps,
   },
-  (table) => [
-    uniqueIndex("order_external_key").on(table.platform, table.externalShopId, table.externalOrderId),
-    index("order_status_idx").on(table.internalStatus, table.paymentStatus, table.shipBy),
-  ],
+  table => [
+    uniqueIndex("order_external_key").on(
+      table.platform,
+      table.externalShopId,
+      table.externalOrderId
+    ),
+    index("order_status_idx").on(
+      table.internalStatus,
+      table.paymentStatus,
+      table.shipBy
+    ),
+  ]
 );
 
 export const salesOrderLines = mysqlTable(
   "sales_order_lines",
   {
     id: serial("id").primaryKey(),
-    salesOrderId: bigint("salesOrderId", { mode: "number", unsigned: true }).notNull(),
+    salesOrderId: bigint("salesOrderId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     listingId: bigint("listingId", { mode: "number", unsigned: true }),
     skuId: bigint("skuId", { mode: "number", unsigned: true }),
     externalSku: varchar("externalSku", { length: 255 }),
     title: varchar("title", { length: 512 }).notNull(),
     quantity: int("quantity").notNull(),
     unitPrice: decimal("unitPrice", { precision: 14, scale: 4 }).notNull(),
-    discount: decimal("discount", { precision: 14, scale: 2 }).default("0").notNull(),
+    discount: decimal("discount", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
     allocatedQty: int("allocatedQty").default(0).notNull(),
     shippedQty: int("shippedQty").default(0).notNull(),
     shortageQty: int("shortageQty").default(0).notNull(),
     snapshot: json("snapshot").$type<Record<string, unknown>>(),
     ...timestamps,
   },
-  (table) => [index("order_line_order_idx").on(table.salesOrderId), index("order_line_sku_idx").on(table.skuId)],
+  table => [
+    index("order_line_order_idx").on(table.salesOrderId),
+    index("order_line_sku_idx").on(table.skuId),
+  ]
 );
 
 export const shipments = mysqlTable(
   "shipments",
   {
     id: serial("id").primaryKey(),
-    salesOrderId: bigint("salesOrderId", { mode: "number", unsigned: true }).notNull(),
+    salesOrderId: bigint("salesOrderId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     packageNo: varchar("packageNo", { length: 128 }).notNull(),
     carrier: varchar("carrier", { length: 255 }).notNull(),
     service: varchar("service", { length: 255 }).notNull(),
@@ -439,7 +614,9 @@ export const shipments = mysqlTable(
     weightUnit: mysqlEnum("weightUnit", ["g", "kg"]).default("g"),
     freightEstimate: decimal("freightEstimate", { precision: 14, scale: 2 }),
     freightActual: decimal("freightActual", { precision: 14, scale: 2 }),
-    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"]).default("AUD").notNull(),
+    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"])
+      .default("AUD")
+      .notNull(),
     status: mysqlEnum("status", [
       "draft",
       "dispatched",
@@ -452,35 +629,73 @@ export const shipments = mysqlTable(
     dispatchedAt: timestamp("dispatchedAt"),
     proofKey: varchar("proofKey", { length: 512 }),
     platformMessage: text("platformMessage"),
-    idempotencyKey: varchar("idempotencyKey", { length: 255 }).notNull().unique(),
-    createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 })
+      .notNull()
+      .unique(),
+    createdById: bigint("createdById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("shipment_order_idx").on(table.salesOrderId), index("shipment_status_idx").on(table.status)],
+  table => [
+    index("shipment_order_idx").on(table.salesOrderId),
+    index("shipment_status_idx").on(table.status),
+  ]
 );
 
 export const shipmentLines = mysqlTable(
   "shipment_lines",
   {
     id: serial("id").primaryKey(),
-    shipmentId: bigint("shipmentId", { mode: "number", unsigned: true }).notNull(),
-    salesOrderLineId: bigint("salesOrderLineId", { mode: "number", unsigned: true }).notNull(),
+    shipmentId: bigint("shipmentId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    salesOrderLineId: bigint("salesOrderLineId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     quantity: int("quantity").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [uniqueIndex("shipment_line_key").on(table.shipmentId, table.salesOrderLineId)],
+  table => [
+    uniqueIndex("shipment_line_key").on(
+      table.shipmentId,
+      table.salesOrderLineId
+    ),
+  ]
 );
 
 export const afterSalesCases = mysqlTable(
   "after_sales_cases",
   {
     id: serial("id").primaryKey(),
-    salesOrderId: bigint("salesOrderId", { mode: "number", unsigned: true }).notNull(),
-    type: mysqlEnum("type", ["refund_only", "return_refund", "reship", "cancel_assist", "dispute"]).notNull(),
-    status: mysqlEnum("status", ["pending", "processing", "waiting_external", "closed"])
+    salesOrderId: bigint("salesOrderId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    type: mysqlEnum("type", [
+      "refund_only",
+      "return_refund",
+      "reship",
+      "cancel_assist",
+      "dispute",
+    ]).notNull(),
+    status: mysqlEnum("status", [
+      "pending",
+      "processing",
+      "waiting_external",
+      "closed",
+    ])
       .default("pending")
       .notNull(),
-    refundStatus: mysqlEnum("refundStatus", ["none", "pending", "confirmed", "failed"])
+    refundStatus: mysqlEnum("refundStatus", [
+      "none",
+      "pending",
+      "confirmed",
+      "failed",
+    ])
       .default("none")
       .notNull(),
     returnStatus: mysqlEnum("returnStatus", [
@@ -495,17 +710,27 @@ export const afterSalesCases = mysqlTable(
       .notNull(),
     reason: text("reason").notNull(),
     responsibility: varchar("responsibility", { length: 255 }),
-    amount: decimal("amount", { precision: 14, scale: 2 }).default("0").notNull(),
-    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"]).default("AUD").notNull(),
+    amount: decimal("amount", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
+    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"])
+      .default("AUD")
+      .notNull(),
     ownerId: bigint("ownerId", { mode: "number", unsigned: true }),
     externalEventId: varchar("externalEventId", { length: 255 }),
     resolution: text("resolution"),
     attachmentKeys: json("attachmentKeys").$type<string[]>(),
-    createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+    createdById: bigint("createdById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     closedAt: timestamp("closedAt"),
   },
-  (table) => [index("after_sales_order_idx").on(table.salesOrderId), uniqueIndex("after_sales_external_idx").on(table.externalEventId)],
+  table => [
+    index("after_sales_order_idx").on(table.salesOrderId),
+    uniqueIndex("after_sales_external_idx").on(table.externalEventId),
+  ]
 );
 
 export const exchangeRates = mysqlTable(
@@ -518,49 +743,90 @@ export const exchangeRates = mysqlTable(
     rateDate: timestamp("rateDate").notNull(),
     source: varchar("source", { length: 255 }).notNull(),
     isDefault: boolean("isDefault").default(false).notNull(),
-    createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+    createdById: bigint("createdById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("exchange_rate_currency_idx").on(table.baseCurrency, table.rateDate)],
+  table => [
+    index("exchange_rate_currency_idx").on(table.baseCurrency, table.rateDate),
+  ]
 );
 
 export const costEntries = mysqlTable(
   "cost_entries",
   {
     id: serial("id").primaryKey(),
-    businessType: mysqlEnum("businessType", ["purchase", "order", "after_sales", "settlement", "period"]).notNull(),
-    businessId: bigint("businessId", { mode: "number", unsigned: true }).notNull(),
+    businessType: mysqlEnum("businessType", [
+      "purchase",
+      "order",
+      "after_sales",
+      "settlement",
+      "period",
+    ]).notNull(),
+    businessId: bigint("businessId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     category: varchar("category", { length: 255 }).notNull(),
     amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
     currency: mysqlEnum("currency", ["CNY", "AUD", "USD"]).notNull(),
-    exchangeRateId: bigint("exchangeRateId", { mode: "number", unsigned: true }),
+    exchangeRateId: bigint("exchangeRateId", {
+      mode: "number",
+      unsigned: true,
+    }),
     audAmount: decimal("audAmount", { precision: 14, scale: 2 }),
-    entryKind: mysqlEnum("entryKind", ["estimate", "actual", "reversal"]).default("actual").notNull(),
-    allocationStatus: mysqlEnum("allocationStatus", ["unallocated", "partial", "allocated"])
+    entryKind: mysqlEnum("entryKind", ["estimate", "actual", "reversal"])
+      .default("actual")
+      .notNull(),
+    allocationStatus: mysqlEnum("allocationStatus", [
+      "unallocated",
+      "partial",
+      "allocated",
+    ])
       .default("unallocated")
       .notNull(),
     replacesId: bigint("replacesId", { mode: "number", unsigned: true }),
     note: text("note"),
-    createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+    createdById: bigint("createdById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("cost_business_idx").on(table.businessType, table.businessId)],
+  table => [index("cost_business_idx").on(table.businessType, table.businessId)]
 );
 
 export const costAllocations = mysqlTable(
   "cost_allocations",
   {
     id: serial("id").primaryKey(),
-    costEntryId: bigint("costEntryId", { mode: "number", unsigned: true }).notNull(),
-    targetType: mysqlEnum("targetType", ["lot", "order", "after_sales", "settlement", "period"]).notNull(),
+    costEntryId: bigint("costEntryId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    targetType: mysqlEnum("targetType", [
+      "lot",
+      "order",
+      "after_sales",
+      "settlement",
+      "period",
+    ]).notNull(),
     targetId: bigint("targetId", { mode: "number", unsigned: true }).notNull(),
     amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
     audAmount: decimal("audAmount", { precision: 14, scale: 2 }),
     reason: text("reason"),
-    createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+    createdById: bigint("createdById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("allocation_entry_idx").on(table.costEntryId), index("allocation_target_idx").on(table.targetType, table.targetId)],
+  table => [
+    index("allocation_entry_idx").on(table.costEntryId),
+    index("allocation_target_idx").on(table.targetType, table.targetId),
+  ]
 );
 
 export const settlements = mysqlTable(
@@ -572,22 +838,44 @@ export const settlements = mysqlTable(
     referenceNo: varchar("referenceNo", { length: 255 }).notNull(),
     periodStart: timestamp("periodStart").notNull(),
     periodEnd: timestamp("periodEnd").notNull(),
-    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"]).default("AUD").notNull(),
+    currency: mysqlEnum("currency", ["AUD", "USD", "CNY"])
+      .default("AUD")
+      .notNull(),
     grossAmount: decimal("grossAmount", { precision: 14, scale: 2 }).notNull(),
     fees: decimal("fees", { precision: 14, scale: 2 }).default("0").notNull(),
-    refunds: decimal("refunds", { precision: 14, scale: 2 }).default("0").notNull(),
+    refunds: decimal("refunds", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
     taxes: decimal("taxes", { precision: 14, scale: 2 }).default("0").notNull(),
-    withheld: decimal("withheld", { precision: 14, scale: 2 }).default("0").notNull(),
-    adjustments: decimal("adjustments", { precision: 14, scale: 2 }).default("0").notNull(),
-    netPlatformPayout: decimal("netPlatformPayout", { precision: 14, scale: 2 }).notNull(),
+    withheld: decimal("withheld", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
+    adjustments: decimal("adjustments", { precision: 14, scale: 2 })
+      .default("0")
+      .notNull(),
+    netPlatformPayout: decimal("netPlatformPayout", {
+      precision: 14,
+      scale: 2,
+    }).notNull(),
     actualReceived: decimal("actualReceived", { precision: 14, scale: 2 }),
-    status: mysqlEnum("status", ["pending", "reconciled", "discrepancy"]).default("pending").notNull(),
+    status: mysqlEnum("status", ["pending", "reconciled", "discrepancy"])
+      .default("pending")
+      .notNull(),
     note: text("note"),
-    reconciledById: bigint("reconciledById", { mode: "number", unsigned: true }),
+    reconciledById: bigint("reconciledById", {
+      mode: "number",
+      unsigned: true,
+    }),
     reconciledAt: timestamp("reconciledAt"),
     ...timestamps,
   },
-  (table) => [uniqueIndex("settlement_reference_idx").on(table.platform, table.externalShopId, table.referenceNo)],
+  table => [
+    uniqueIndex("settlement_reference_idx").on(
+      table.platform,
+      table.externalShopId,
+      table.referenceNo
+    ),
+  ]
 );
 
 export const storeConnections = mysqlTable(
@@ -610,9 +898,16 @@ export const storeConnections = mysqlTable(
     syncCursor: varchar("syncCursor", { length: 1024 }),
     errorSummary: text("errorSummary"),
     backlogCount: int("backlogCount").default(0).notNull(),
-    shippingWritebackEnabled: boolean("shippingWritebackEnabled").default(false).notNull(),
-    inventoryWritebackEnabled: boolean("inventoryWritebackEnabled").default(false).notNull(),
-    writebackMode: mysqlEnum("writebackMode", ["system_controlled", "manual_confirm"]),
+    shippingWritebackEnabled: boolean("shippingWritebackEnabled")
+      .default(false)
+      .notNull(),
+    inventoryWritebackEnabled: boolean("inventoryWritebackEnabled")
+      .default(false)
+      .notNull(),
+    writebackMode: mysqlEnum("writebackMode", [
+      "system_controlled",
+      "manual_confirm",
+    ]),
     // 官方 OAuth 直连后写入的账号快照。凭证本身保存在 store_credentials，绝不随 workspace 查询返回。
     externalAccountId: varchar("externalAccountId", { length: 255 }),
     accountLabel: varchar("accountLabel", { length: 255 }),
@@ -622,7 +917,12 @@ export const storeConnections = mysqlTable(
     profileSummary: text("profileSummary"),
     ...timestamps,
   },
-  (table) => [uniqueIndex("store_connection_key").on(table.platform, table.externalShopId)],
+  table => [
+    uniqueIndex("store_connection_key").on(
+      table.platform,
+      table.externalShopId
+    ),
+  ]
 );
 
 /**
@@ -633,7 +933,10 @@ export const storeCredentials = mysqlTable(
   "store_credentials",
   {
     id: serial("id").primaryKey(),
-    storeConnectionId: bigint("storeConnectionId", { mode: "number", unsigned: true }).notNull(),
+    storeConnectionId: bigint("storeConnectionId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     platform: mysqlEnum("platform", ["etsy", "ebay"]).notNull(),
     accessToken: text("accessToken").notNull(),
     refreshToken: text("refreshToken"),
@@ -643,24 +946,45 @@ export const storeCredentials = mysqlTable(
     lastRefreshedAt: timestamp("lastRefreshedAt"),
     ...timestamps,
   },
-  (table) => [uniqueIndex("store_credentials_store_key").on(table.storeConnectionId)],
+  table => [
+    uniqueIndex("store_credentials_store_key").on(table.storeConnectionId),
+  ]
 );
 
 export const syncJobs = mysqlTable(
   "sync_jobs",
   {
     id: serial("id").primaryKey(),
-    storeConnectionId: bigint("storeConnectionId", { mode: "number", unsigned: true }).notNull(),
-    resourceType: mysqlEnum("resourceType", ["orders", "listings", "refunds", "shipments", "inventory"]).notNull(),
-    status: mysqlEnum("status", ["queued", "running", "succeeded", "failed", "retrying"]).notNull(),
+    storeConnectionId: bigint("storeConnectionId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    resourceType: mysqlEnum("resourceType", [
+      "orders",
+      "listings",
+      "refunds",
+      "shipments",
+      "inventory",
+    ]).notNull(),
+    status: mysqlEnum("status", [
+      "queued",
+      "running",
+      "succeeded",
+      "failed",
+      "retrying",
+    ]).notNull(),
     attemptCount: int("attemptCount").default(0).notNull(),
     lastError: text("lastError"),
     startedAt: timestamp("startedAt"),
     finishedAt: timestamp("finishedAt"),
-    idempotencyKey: varchar("idempotencyKey", { length: 255 }).notNull().unique(),
+    idempotencyKey: varchar("idempotencyKey", { length: 255 })
+      .notNull()
+      .unique(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("sync_job_store_idx").on(table.storeConnectionId, table.status)],
+  table => [
+    index("sync_job_store_idx").on(table.storeConnectionId, table.status),
+  ]
 );
 
 export const tasks = mysqlTable(
@@ -668,12 +992,24 @@ export const tasks = mysqlTable(
   {
     id: serial("id").primaryKey(),
     stableKey: varchar("stableKey", { length: 255 }).notNull().unique(),
-    severity: mysqlEnum("severity", ["critical", "high", "medium", "low"]).default("medium").notNull(),
+    severity: mysqlEnum("severity", ["critical", "high", "medium", "low"])
+      .default("medium")
+      .notNull(),
     type: varchar("type", { length: 128 }).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     reason: text("reason").notNull(),
-    businessType: mysqlEnum("businessType", ["order", "purchase", "after_sales", "store", "sku", "sync"]).notNull(),
-    businessId: bigint("businessId", { mode: "number", unsigned: true }).notNull(),
+    businessType: mysqlEnum("businessType", [
+      "order",
+      "purchase",
+      "after_sales",
+      "store",
+      "sku",
+      "sync",
+    ]).notNull(),
+    businessId: bigint("businessId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     ownerId: bigint("ownerId", { mode: "number", unsigned: true }),
     dueAt: timestamp("dueAt"),
     status: mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
@@ -684,22 +1020,38 @@ export const tasks = mysqlTable(
     closedAt: timestamp("closedAt"),
     ...timestamps,
   },
-  (table) => [index("task_status_idx").on(table.status, table.severity, table.dueAt)],
+  table => [
+    index("task_status_idx").on(table.status, table.severity, table.dueAt),
+  ]
 );
 
 export const notes = mysqlTable(
   "notes",
   {
     id: serial("id").primaryKey(),
-    businessType: mysqlEnum("businessType", ["order", "purchase", "after_sales", "candidate", "sku"]).notNull(),
-    businessId: bigint("businessId", { mode: "number", unsigned: true }).notNull(),
+    businessType: mysqlEnum("businessType", [
+      "order",
+      "purchase",
+      "after_sales",
+      "candidate",
+      "sku",
+    ]).notNull(),
+    businessId: bigint("businessId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     body: text("body").notNull(),
-    visibility: mysqlEnum("visibility", ["internal"]).default("internal").notNull(),
+    visibility: mysqlEnum("visibility", ["internal"])
+      .default("internal")
+      .notNull(),
     attachmentKey: varchar("attachmentKey", { length: 512 }),
-    createdById: bigint("createdById", { mode: "number", unsigned: true }).notNull(),
+    createdById: bigint("createdById", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("note_business_idx").on(table.businessType, table.businessId)],
+  table => [index("note_business_idx").on(table.businessType, table.businessId)]
 );
 
 export const auditLogs = mysqlTable(
@@ -715,11 +1067,16 @@ export const auditLogs = mysqlTable(
     reason: text("reason"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
-  (table) => [index("audit_entity_idx").on(table.entityType, table.entityId), index("audit_actor_idx").on(table.actorId, table.createdAt)],
+  table => [
+    index("audit_entity_idx").on(table.entityType, table.entityId),
+    index("audit_actor_idx").on(table.actorId, table.createdAt),
+  ]
 );
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type LocalAccount = typeof localAccounts.$inferSelect;
+export type InsertLocalAccount = typeof localAccounts.$inferInsert;
 export type Supplier = typeof suppliers.$inferSelect;
 export type ProductCandidate = typeof productCandidates.$inferSelect;
 export type Sku = typeof skus.$inferSelect;

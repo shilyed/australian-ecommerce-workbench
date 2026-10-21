@@ -25,7 +25,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/providers/theme-context";
 import { LogOut, Moon, PanelLeft, Sun } from "lucide-react";
 import { menuItems } from "@/app/navigation";
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useNavigate } from "react-router";
 import { AuthLayoutSkeleton } from "./AuthLayoutSkeleton";
 import { Button } from "./ui/button";
@@ -35,11 +41,7 @@ const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 
-export default function AuthLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: ReactNode }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
@@ -63,7 +65,7 @@ export default function AuthLayout({
               登录中澳跨境电商工作台
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              使用 Kimi 账号进入内部运营闭环。订单、库存、成本和审计数据保存在服务端数据库。
+              使用工作台邮箱账号进入内部运营闭环。订单、库存、成本和审计数据保存在服务端数据库。
             </p>
           </div>
           <Button
@@ -112,7 +114,9 @@ function AuthLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location.pathname);
+  const activeMenuItem = menuItems.find(
+    item => item.path === location.pathname
+  );
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -154,11 +158,7 @@ function AuthLayoutContent({
   return (
     <>
       <div className="relative" ref={sidebarRef}>
-        <Sidebar
-          collapsible="icon"
-          className="border-r-0"
-
-        >
+        <Sidebar collapsible="icon" className="border-r-0">
           <SidebarHeader className="h-16 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
@@ -182,7 +182,10 @@ function AuthLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
-                const isActive = location.pathname === item.path || (item.path !== "/" && location.pathname.startsWith(item.path));
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path !== "/" &&
+                    location.pathname.startsWith(item.path));
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
@@ -234,7 +237,11 @@ function AuthLayoutContent({
                   ) : (
                     <Moon className="mr-2 h-4 w-4" />
                   )}
-                  <span>{resolvedTheme === "dark" ? "切换到日间模式" : "切换到夜间模式"}</span>
+                  <span>
+                    {resolvedTheme === "dark"
+                      ? "切换到日间模式"
+                      : "切换到夜间模式"}
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
@@ -273,7 +280,9 @@ function AuthLayoutContent({
             <ThemeToggle />
           </div>
         )}
-        <main className="flex-1 overflow-x-clip p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:p-4 lg:p-6">{children}</main>
+        <main className="flex-1 overflow-x-clip p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:p-4 lg:p-6">
+          {children}
+        </main>
       </SidebarInset>
     </>
   );

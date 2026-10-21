@@ -18,6 +18,7 @@ React 19 + Vite + Tailwind/shadcn 前端，Hono + tRPC + Drizzle(MySQL) 后端�
 - 系统设置：店铺授权、写回开关、成员角色、同步任务、审计日志
 - **日间 / 夜间主题**：默认跟随系统，可手动切换并持久化
 - **Etsy / eBay 官方 OAuth 直连**：在工作台内用平台账号登录授权，自动读取店铺信息
+- **自托管账户体系**：邮箱 + 密码登录、首次管理员初始化、成员账号与密码重置，不依赖 Kimi 登录
 
 ## 本地启动
 
@@ -29,7 +30,7 @@ npm ci
 
 # 2) 配置环境变量
 cp .env.example .env
-# 至少填写 APP_ID / APP_SECRET / DATABASE_URL / KIMI_* / OWNER_UNION_ID
+# 至少填写 APP_SECRET / DATABASE_URL
 
 # 3) 同步数据库结构（新增了 store_credentials 表）
 npm run db:push
@@ -41,18 +42,31 @@ npm run dev          # http://localhost:3000
 
 Node.js 20+，MySQL 8.0+。
 
+首次打开 `/login` 会进入管理员初始化；也可以提前在 `.env` 设置
+`ADMIN_EMAIL` / `ADMIN_PASSWORD`，生产环境启动时会自动创建首个管理员。
+密码至少 12 位且同时包含字母和数字，数据库只保存 scrypt 加盐散列。
+
+## 登录与成员账号
+
+- 登录账号是邮箱，会话使用 HttpOnly + SameSite=Lax Cookie，默认 7 天有效
+- 首次管理员创建后，登录页关闭初始化入口；管理员可在「系统设置 → 成员与角色」添加成员或重置密码
+- 连续输错 5 次会锁定账号 15 分钟；同一 IP + 邮箱在 15 分钟内失败 10 次会被限流
+- 停用成员或重置密码会立即让旧会话失效
+- `APP_SECRET` 用于会话签名，生产环境至少 32 个字符；轮换后所有用户需要重新登录
+
 ## 清空数据
 
 仓库不再内置任何演示 / 试点数据。若数据库里已有历史记录，可用下面的脚本清空：
 
 ```bash
-npm run db:reset -- --yes                 # 清空全部表（含 users，重新登录会按 OWNER_UNION_ID 恢复管理员）
+npm run db:reset -- --yes                 # 清空全部表（含用户与登录凭据）
 npm run db:reset -- --yes --keep-users    # 只清业务数据，保留登录用户
 ```
 
 - 不可逆，执行前请先备份数据库
 - 只清数据库行；`files` 表对应的对象存储附件不会被删除
 - 不带 `--yes` 时只会打印提示，不会执行
+- 清空 `users` 后重新打开 `/login` 初始化管理员；如果配置了 `ADMIN_*`，重启应用也会创建
 
 ## 主题（日间 / 夜间）
 
@@ -81,6 +95,9 @@ npm run db:reset -- --yes --keep-users    # 只清业务数据，保留登录用
 
 公网部署时建议设置 `APP_ORIGIN=https://<你的域名>`，让回调地址不依赖反向代理头。
 
+没有 HTTPS 域名时可以先按 IP + 端口运行工作台，但 Etsy / eBay 的 OAuth 回调通常要求
+HTTPS，正式连接店铺前需要域名和证书。
+
 ### 2. 在工作台连接
 
 1. 管理员登录 →「系统设置 → 平台官方直连」
@@ -100,6 +117,22 @@ npm run db:reset -- --yes --keep-users    # 只清业务数据，保留登录用
 - 平台接口失败时原样展示错误摘要，不会伪装成“同步成功”；令牌失效会把店铺标记为 `expired` 并要求重新授权
 
 轮换 `APP_SECRET` 会让已存令牌无法解密，需要重新授权一次，这是预期的安全取舍。
+
+## Docker 部署
+
+仓库根目录提供 `docker-compose.yml`、`deploy/Caddyfile` 和 `.env.example`。
+完整步骤见 [腾讯云部署说明](../docs/deployment-tencent-cloud.md)。核心命令：
+
+```bash
+cp .env.example .env
+# 编辑 .env：域名/IP、APP_ORIGIN、APP_SECRET、MySQL 密码、管理员邮箱与初始密码
+docker compose build
+docker compose up -d mysql
+docker compose --profile tools run --rm db-init
+docker compose up -d app caddy
+```
+
+MySQL 和 Node 应用都不直接暴露公网，只有 Caddy 监听 HTTP/HTTPS。
 
 ## 常用命令
 

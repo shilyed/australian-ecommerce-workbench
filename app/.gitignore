@@ -32,6 +32,9 @@ dist-ssr
 *.sqlite3
 db/migrations/*.sql
 !db/migrations/0001_store_oauth.sql
+!db/migrations/0002_local_auth.sql
+# Self-hosted attachments
+data/
 # TypeScript cache
 *.tsbuildinfo
 # Build outputs

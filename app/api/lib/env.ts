@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -8,16 +9,24 @@ function required(name: string): string {
   return value ?? "";
 }
 
+const appSecret = required("APP_SECRET");
+if (process.env.NODE_ENV === "production" && appSecret.length < 32) {
+  throw new Error("APP_SECRET 至少需要 32 个字符，请使用随机密钥");
+}
+
 export const env = {
-  appId: required("APP_ID"),
-  appSecret: required("APP_SECRET"),
+  appSecret,
   isProduction: process.env.NODE_ENV === "production",
   databaseUrl: required("DATABASE_URL"),
-  kimiAuthUrl: required("KIMI_AUTH_URL"),
-  kimiOpenUrl: required("KIMI_OPEN_URL"),
-  ownerUnionId: process.env.OWNER_UNION_ID ?? "",
   /** 公网访问地址，例如 https://workbench.example.com。留空时回退到请求头推导的 origin。 */
   appOrigin: (process.env.APP_ORIGIN ?? "").replace(/\/+$/, ""),
+  /** 首次启动创建管理员；账号表已有数据后不会再使用。 */
+  adminEmail: process.env.ADMIN_EMAIL ?? "",
+  adminPassword: process.env.ADMIN_PASSWORD ?? "",
+  adminName: process.env.ADMIN_NAME ?? "管理员",
+  /** 自托管附件目录；容器中建议挂载持久卷。 */
+  storageDir:
+    process.env.STORAGE_DIR ?? path.resolve(process.cwd(), "data/uploads"),
 };
 
 export const integrationEnv = {
@@ -32,7 +41,10 @@ export const integrationEnv = {
     clientId: process.env.EBAY_CLIENT_ID ?? "",
     clientSecret: process.env.EBAY_CLIENT_SECRET ?? "",
     /** production | sandbox */
-    environment: (process.env.EBAY_ENVIRONMENT ?? "production").toLowerCase() === "sandbox" ? "sandbox" : "production",
+    environment:
+      (process.env.EBAY_ENVIRONMENT ?? "production").toLowerCase() === "sandbox"
+        ? "sandbox"
+        : "production",
     /** eBay 把回调地址叫 RuName（Redirect URL name），不是原始 URL。 */
     redirectUri: process.env.EBAY_REDIRECT_URI ?? "",
     marketplaceId: process.env.EBAY_MARKETPLACE_ID ?? "EBAY_AU",

@@ -1,14 +1,13 @@
 export const Session = {
-  cookieName: "kimi_sid",
-  maxAgeMs: 365 * 24 * 60 * 60 * 1000,
+  cookieName: "aew_sid",
+  maxAgeMs: 7 * 24 * 60 * 60 * 1000,
 } as const;
 
 export const ErrorMessages = {
-  unauthenticated: "Authentication required",
-  insufficientRole: "Insufficient permissions",
+  unauthenticated: "请先登录",
+  insufficientRole: "权限不足",
 } as const;
 
 export const Paths = {
   login: "/login",
-  oauthCallback: "/api/oauth/callback",
 } as const;

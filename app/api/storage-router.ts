@@ -2,7 +2,11 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { files } from "@db/schema";
-import { storage } from "./lib/storage";
+import {
+  deleteLocalFile,
+  localFileUrl,
+  uploadLocalFile,
+} from "./lib/local-storage";
 import { authedQuery, createRouter } from "./middleware";
 import { getDb } from "./queries/connection";
 
@@ -15,15 +19,18 @@ export const storageRouter = createRouter({
         name: z.string().min(1).max(512),
         contentBase64: z.string().min(1),
         contentType: z.string().max(255).optional(),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       const bytes = Uint8Array.from(Buffer.from(input.contentBase64, "base64"));
       if (bytes.byteLength > MAX_INLINE_FILE_BYTES) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "单个附件不能超过 20MB" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "单个附件不能超过 20MB",
+        });
       }
       const safePrefix = `workbench/u/${ctx.user.id}/`;
-      const saved = await storage.uploadFile({
+      const saved = await uploadLocalFile({
         fileContent: bytes,
         fileName: `${safePrefix}${input.name}`,
         contentType: input.contentType,
@@ -39,30 +46,48 @@ export const storageRouter = createRouter({
       return { key: saved.key, size: saved.size, etag: saved.etag };
     }),
 
-  url: authedQuery.input(z.object({ key: z.string().min(1) })).query(async ({ ctx, input }) => {
-    const db = getDb();
-    const rows = await db.select().from(files).where(eq(files.key, input.key)).limit(1);
-    const file = rows.at(0);
-    if (!file || (file.ownerId !== ctx.user.id && ctx.user.role !== "admin")) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "无权访问该附件" });
-    }
-    const result = await storage.getPresignedUrl({ key: input.key });
-    return { url: result.url };
-  }),
+  url: authedQuery
+    .input(z.object({ key: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(files)
+        .where(eq(files.key, input.key))
+        .limit(1);
+      const file = rows.at(0);
+      if (
+        !file ||
+        (file.ownerId !== ctx.user.id && ctx.user.role !== "admin")
+      ) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "无权访问该附件" });
+      }
+      return { url: localFileUrl(input.key) };
+    }),
 
   listMine: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     return db.select().from(files).where(eq(files.ownerId, ctx.user.id));
   }),
 
-  remove: authedQuery.input(z.object({ key: z.string().min(1) })).mutation(async ({ ctx, input }) => {
-    const db = getDb();
-    const rows = await db.select().from(files).where(eq(files.key, input.key)).limit(1);
-    const file = rows.at(0);
-    if (!file || (file.ownerId !== ctx.user.id && ctx.user.role !== "admin")) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "无权删除该附件" });
-    }
-    await db.delete(files).where(eq(files.key, input.key));
-    return storage.deleteFile({ fileKey: input.key });
-  }),
+  remove: authedQuery
+    .input(z.object({ key: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(files)
+        .where(eq(files.key, input.key))
+        .limit(1);
+      const file = rows.at(0);
+      if (
+        !file ||
+        (file.ownerId !== ctx.user.id && ctx.user.role !== "admin")
+      ) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "无权删除该附件" });
+      }
+      await db.delete(files).where(eq(files.key, input.key));
+      await deleteLocalFile(input.key);
+      return { ok: true };
+    }),
 });

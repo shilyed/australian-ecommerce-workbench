@@ -3,8 +3,13 @@ import { eq } from "drizzle-orm";
 import type { User } from "@db/schema";
 import { users } from "@db/schema";
 import { getDb } from "../queries/connection";
-import { authenticateRequest } from "../kimi/auth";
-import { createPkcePair, openOAuthState, safeReturnPath, sealOAuthState } from "../lib/secrets";
+import { authenticateRequest } from "../auth/request";
+import {
+  createPkcePair,
+  openOAuthState,
+  safeReturnPath,
+  sealOAuthState,
+} from "../lib/secrets";
 import {
   buildAuthorizeUrl,
   describeProvider,
@@ -29,7 +34,10 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 /** 回调只能回到站内路径，避免开放重定向。 */
-function callbackRedirect(returnTo: string, params: Record<string, string>): string {
+function callbackRedirect(
+  returnTo: string,
+  params: Record<string, string>
+): string {
   // 生成相对 Location，浏览器按当前站点解析；不依赖可被伪造的 Host 头
   const url = new URL(safeReturnPath(returnTo), "http://aew.internal");
   for (const [key, value] of Object.entries(params)) {
@@ -49,7 +57,7 @@ async function requireAdmin(c: Context): Promise<User> {
 export function createIntegrationRoutes() {
   const app = new Hono();
 
-  app.get("/:platform/start", async (c) => {
+  app.get("/:platform/start", async c => {
     const platform = parsePlatform(c.req.param("platform"));
     if (!platform) return c.json({ error: "不支持的平台" }, 404);
     const origin = inferOrigin(c.req.raw);
@@ -59,7 +67,7 @@ export function createIntegrationRoutes() {
       const provider = describeProvider(platform, origin);
       if (!provider.configured) {
         throw new IntegrationError(
-          `${platform === "etsy" ? "Etsy" : "eBay"} 应用凭证未配置：缺少 ${provider.missing.join("、")}`,
+          `${platform === "etsy" ? "Etsy" : "eBay"} 应用凭证未配置：缺少 ${provider.missing.join("、")}`
         );
       }
       const pkce = platform === "etsy" ? createPkcePair() : null;
@@ -79,15 +87,18 @@ export function createIntegrationRoutes() {
     } catch (error) {
       const message = errorMessage(error, "授权发起失败");
       console.warn(`[integrations] start ${platform} failed: ${message}`);
-      return c.redirect(callbackRedirect(returnTo, {
-        integration: platform,
-        status: "error",
-        message,
-      }), 302);
+      return c.redirect(
+        callbackRedirect(returnTo, {
+          integration: platform,
+          status: "error",
+          message,
+        }),
+        302
+      );
     }
   });
 
-  app.get("/:platform/callback", async (c) => {
+  app.get("/:platform/callback", async c => {
     const platform = parsePlatform(c.req.param("platform"));
     if (!platform) return c.json({ error: "不支持的平台" }, 404);
     const origin = inferOrigin(c.req.raw);
@@ -98,7 +109,8 @@ export function createIntegrationRoutes() {
 
     let returnTo = "/settings";
     try {
-      if (!stateToken) throw new IntegrationError("回调缺少 state，无法校验请求来源");
+      if (!stateToken)
+        throw new IntegrationError("回调缺少 state，无法校验请求来源");
       const state = await openOAuthState(stateToken);
       returnTo = safeReturnPath(state.returnTo);
       if (state.platform !== platform) {
@@ -109,15 +121,21 @@ export function createIntegrationRoutes() {
         throw new IntegrationError(
           providerError === "access_denied"
             ? "你取消了授权"
-            : `平台返回错误：${providerErrorDescription ?? providerError}`,
+            : `平台返回错误：${providerErrorDescription ?? providerError}`
         );
       }
       if (!code) throw new IntegrationError("回调缺少授权码");
 
       const db = getDb();
-      const [user] = await db.select().from(users).where(eq(users.id, state.userId)).limit(1);
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, state.userId))
+        .limit(1);
       if (!user || user.role !== "admin" || user.status !== "active") {
-        throw new IntegrationError("当前账号无权完成店铺授权，请重新登录管理员账号");
+        throw new IntegrationError(
+          "当前账号无权完成店铺授权，请重新登录管理员账号"
+        );
       }
 
       const tokens = await exchangeAuthorizationCode({
@@ -134,21 +152,27 @@ export function createIntegrationRoutes() {
         actorId: user.id,
       });
 
-      return c.redirect(callbackRedirect(returnTo, {
-        integration: platform,
-        status: "connected",
-        store: String(storeId),
-        shop: profile.shopName,
-      }), 302);
+      return c.redirect(
+        callbackRedirect(returnTo, {
+          integration: platform,
+          status: "connected",
+          store: String(storeId),
+          shop: profile.shopName,
+        }),
+        302
+      );
     } catch (error) {
       const message = errorMessage(error, "店铺授权失败");
       console.warn(`[integrations] callback ${platform} failed: ${message}`);
       const cancelled = providerError === "access_denied";
-      return c.redirect(callbackRedirect(returnTo, {
-        integration: platform,
-        status: cancelled ? "cancelled" : "error",
-        message,
-      }), 302);
+      return c.redirect(
+        callbackRedirect(returnTo, {
+          integration: platform,
+          status: cancelled ? "cancelled" : "error",
+          message,
+        }),
+        302
+      );
     }
   });
 

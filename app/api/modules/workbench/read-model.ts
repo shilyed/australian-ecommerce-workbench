@@ -10,6 +10,7 @@ import {
   inventoryLedger,
   inventoryLots,
   inventoryPositions,
+  localAccounts,
   notes,
   paymentRecords,
   productCandidates,
@@ -76,6 +77,7 @@ export async function buildWorkspace(user: User) {
     auditRows,
     userRows,
     credentialRows,
+    localAccountRows,
   ] = await Promise.all([
     db.select().from(suppliers).orderBy(desc(suppliers.updatedAt)),
     db
@@ -119,6 +121,13 @@ export async function buildWorkspace(user: User) {
     db
       .select({ storeConnectionId: storeCredentials.storeConnectionId })
       .from(storeCredentials),
+    db
+      .select({
+        userId: localAccounts.userId,
+        email: localAccounts.email,
+        lastLoginAt: localAccounts.lastLoginAt,
+      })
+      .from(localAccounts),
   ]);
 
   const purchaseOrdersJoined = poRows.map(po => ({
@@ -312,6 +321,14 @@ export async function buildWorkspace(user: User) {
     })),
     notes: noteRows,
     auditLogs: auditRows.slice(0, 100),
-    members: userRows,
+    members: userRows.map(member => ({
+      ...member,
+      hasPassword: localAccountRows.some(row => row.userId === member.id),
+      loginEmail:
+        localAccountRows.find(row => row.userId === member.id)?.email ?? null,
+      lastLoginAt:
+        localAccountRows.find(row => row.userId === member.id)?.lastLoginAt ??
+        null,
+    })),
   };
 }

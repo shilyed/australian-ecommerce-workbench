@@ -1,17 +1,23 @@
 import type { CookieOptions } from "hono/utils/cookie";
+import { env } from "./env";
 
-function isLocalhost(headers: Headers): boolean {
-  const host = headers.get("host") || "";
-  return host.startsWith("localhost:") || host.startsWith("127.0.0.1:");
+function isHttps(headers: Headers): boolean {
+  if (env.appOrigin.startsWith("https://")) return true;
+  const forwardedProto = headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim();
+  if (forwardedProto) return forwardedProto === "https";
+  return false;
 }
 
 export function getSessionCookieOptions(headers: Headers): CookieOptions {
-  const localhost = isLocalhost(headers);
+  const secure = isHttps(headers);
 
   return {
     httpOnly: true,
     path: "/",
-    sameSite: localhost ? "Lax" : "None",
-    secure: !localhost,
+    sameSite: "Lax",
+    secure,
   };
 }
