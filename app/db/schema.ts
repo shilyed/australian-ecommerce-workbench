@@ -163,7 +163,6 @@ export const productCandidates = mysqlTable(
     ...timestamps,
   },
   table => [
-    index("candidate_source_idx").on(table.sourceUrl),
     index("candidate_supplier_idx").on(table.supplierId),
   ]
 );
