@@ -444,6 +444,7 @@ async function ebayGet<T>(
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${accessToken}`,
+        "Accept-Language": "en-AU",
         "X-EBAY-C-MARKETPLACE-ID": integrationEnv.ebay.marketplaceId,
       },
     },
