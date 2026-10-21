@@ -7,6 +7,7 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 import { createIntegrationRoutes } from "./integrations/routes";
+import { createEbayComplianceRoutes } from "./integrations/ebay-compliance";
 import { createFilesRoute } from "./files-route";
 import { getDb } from "./queries/connection";
 
@@ -25,6 +26,7 @@ app.get("/api/health", async c => {
   }
 });
 app.route("/api/integrations", createIntegrationRoutes());
+app.route("/api/integrations", createEbayComplianceRoutes());
 app.route("/api/files", createFilesRoute());
 app.use("/api/trpc/*", async c => {
   return fetchRequestHandler({

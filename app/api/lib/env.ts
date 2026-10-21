@@ -48,5 +48,8 @@ export const integrationEnv = {
     /** eBay 把回调地址叫 RuName（Redirect URL name），不是原始 URL。 */
     redirectUri: process.env.EBAY_REDIRECT_URI ?? "",
     marketplaceId: process.env.EBAY_MARKETPLACE_ID ?? "EBAY_AU",
+    /** eBay 强制要求的生产应用用户数据删除通知端点及其验证令牌。 */
+    deletionEndpoint: process.env.EBAY_DELETION_ENDPOINT ?? "",
+    verificationToken: process.env.EBAY_VERIFICATION_TOKEN ?? "",
   },
 } as const;
