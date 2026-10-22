@@ -19,6 +19,9 @@ const SettingsPage = lazy(() => import("@/features/settings/SettingsPage"));
 const ProductDetailPage = lazy(
   () => import("@/features/products/ProductDetailPage")
 );
+const EbayListingPage = lazy(
+  () => import("@/features/products/EbayListingPage")
+);
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 
 export function AppRoutes() {
@@ -71,6 +74,14 @@ export function AppRoutes() {
           element={
             <AuthLayout>
               <ProductDetailPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/products/:skuId/marketplaces/ebay"
+          element={
+            <AuthLayout>
+              <EbayListingPage />
             </AuthLayout>
           }
         />
