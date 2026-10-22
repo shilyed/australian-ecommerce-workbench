@@ -16,10 +16,11 @@ const ETSY_SCOPES = ["profile_r", "shops_r", "listings_r", "transactions_r"];
 
 const EBAY_SCOPES = [
   "https://api.ebay.com/oauth/api_scope",
-  "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+  "https://api.ebay.com/oauth/api_scope/sell.inventory",
   "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
   "https://api.ebay.com/oauth/api_scope/sell.account.readonly",
   "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
+  "https://api.ebay.com/oauth/api_scope/commerce.taxonomy.readonly",
 ];
 
 const EBAY_MARKETPLACE_HOSTS: Record<string, string> = {
@@ -405,11 +406,18 @@ async function ebayExchangeCode(code: string, origin: string): Promise<TokenSet>
   };
 }
 
-async function ebayRefresh(refreshToken: string): Promise<TokenSet> {
+/** 刷新时只能申请当初已授予的 scope 子集，否则 eBay 返回 invalid_scope。 */
+export function ebayRefreshScopes(grantedScopes?: string | null): string[] {
+  const granted = (grantedScopes ?? "").split(/\s+/).filter(Boolean);
+  return granted.length > 0 ? granted : EBAY_SCOPES;
+}
+
+async function ebayRefresh(refreshToken: string, grantedScopes?: string | null): Promise<TokenSet> {
+  const scopes = ebayRefreshScopes(grantedScopes);
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: refreshToken,
-    scope: EBAY_SCOPES.join(" "),
+    scope: scopes.join(" "),
   });
   const json = await requestJson<EbayTokenResponse>(
     `${ebayBaseUrl()}/identity/v1/oauth2/token`,
@@ -428,7 +436,7 @@ async function ebayRefresh(refreshToken: string): Promise<TokenSet> {
     accessToken: json.access_token,
     refreshToken: json.refresh_token ?? refreshToken,
     expiresAt: new Date(Date.now() + (json.expires_in ?? 7200) * 1000),
-    scopes: (json.scope ?? EBAY_SCOPES.join(" ")).split(/\s+/).filter(Boolean),
+    scopes: (json.scope ?? scopes.join(" ")).split(/\s+/).filter(Boolean),
     tokenType: json.token_type ?? "Bearer",
   };
 }
@@ -564,8 +572,9 @@ export async function exchangeAuthorizationCode(options: {
 export async function refreshAccessToken(
   platform: IntegrationPlatform,
   refreshToken: string,
+  grantedScopes?: string | null,
 ): Promise<TokenSet> {
-  return platform === "etsy" ? etsyRefresh(refreshToken) : ebayRefresh(refreshToken);
+  return platform === "etsy" ? etsyRefresh(refreshToken) : ebayRefresh(refreshToken, grantedScopes);
 }
 
 export async function fetchStoreProfile(

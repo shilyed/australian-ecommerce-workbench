@@ -159,6 +159,7 @@ export async function getValidAccessToken(storeId: number): Promise<{
     const refreshed = await refreshAccessToken(
       store.platform,
       decryptSecret(credentials.refreshToken),
+      credentials.scopes,
     );
     await persistRefreshedToken(storeId, refreshed, credentials.refreshToken);
     return { store, accessToken: refreshed.accessToken };

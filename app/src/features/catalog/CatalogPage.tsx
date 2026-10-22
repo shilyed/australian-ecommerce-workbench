@@ -360,9 +360,13 @@ export default function CatalogPage() {
                         }
                       >
                         <td>
-                          <p className="font-mono font-semibold text-primary">
+                          <Link
+                            to={`/products/${sku.id}`}
+                            className="font-mono font-semibold text-primary hover:underline"
+                            title="打开商品详情 / 市场刊登"
+                          >
                             {sku.code}
-                          </p>
+                          </Link>
                           <p className="mt-1 text-sm">{sku.name}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {sku.spec} · 预警 {sku.alertThreshold}

@@ -16,6 +16,9 @@ const PurchasingPage = lazy(
 const SourcingPage = lazy(() => import("@/features/sourcing/SourcingPage"));
 const FinancePage = lazy(() => import("@/features/finance/FinancePage"));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage"));
+const ProductDetailPage = lazy(
+  () => import("@/features/products/ProductDetailPage")
+);
 const LoginPage = lazy(() => import("@/features/auth/LoginPage"));
 
 export function AppRoutes() {
@@ -60,6 +63,14 @@ export function AppRoutes() {
           element={
             <AuthLayout>
               <CatalogPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/products/:skuId"
+          element={
+            <AuthLayout>
+              <ProductDetailPage />
             </AuthLayout>
           }
         />

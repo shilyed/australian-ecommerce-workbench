@@ -229,6 +229,54 @@ export const channelListings = mysqlTable(
   ]
 );
 
+/**
+ * 主商品（skus）在各个销售市场上的刊登详情。本地编辑只写 localPayload，
+ * 不会自动推送到平台；push / publish / unpublish 需要管理员明确操作。
+ */
+export const marketplaceListings = mysqlTable(
+  "marketplace_listings",
+  {
+    id: serial("id").primaryKey(),
+    skuId: bigint("skuId", { mode: "number", unsigned: true }).notNull(),
+    platform: mysqlEnum("platform", ["ebay", "etsy", "amazon"]).notNull(),
+    storeConnectionId: bigint("storeConnectionId", {
+      mode: "number",
+      unsigned: true,
+    }).notNull(),
+    status: mysqlEnum("status", [
+      "draft",
+      "ready",
+      "publishing",
+      "published",
+      "unpublished",
+      "failed",
+    ])
+      .default("draft")
+      .notNull(),
+    platformSku: varchar("platformSku", { length: 255 }),
+    externalListingId: varchar("externalListingId", { length: 255 }),
+    externalOfferId: varchar("externalOfferId", { length: 255 }),
+    listingUrl: varchar("listingUrl", { length: 1024 }),
+    localPayload: json("localPayload").$type<Record<string, unknown>>(),
+    lastPushedPayload: json("lastPushedPayload").$type<Record<string, unknown>>(),
+    lastPushedHash: varchar("lastPushedHash", { length: 64 }),
+    lastError: text("lastError"),
+    lastPushedAt: timestamp("lastPushedAt"),
+    publishedAt: timestamp("publishedAt"),
+    createdBy: bigint("createdBy", { mode: "number", unsigned: true }),
+    ...timestamps,
+  },
+  table => [
+    uniqueIndex("marketplace_listing_key").on(
+      table.skuId,
+      table.platform,
+      table.storeConnectionId
+    ),
+    index("marketplace_listing_status_idx").on(table.platform, table.status),
+    index("marketplace_listing_store_idx").on(table.storeConnectionId),
+  ]
+);
+
 export const purchaseOrders = mysqlTable(
   "purchase_orders",
   {
@@ -1080,6 +1128,7 @@ export type Supplier = typeof suppliers.$inferSelect;
 export type ProductCandidate = typeof productCandidates.$inferSelect;
 export type Sku = typeof skus.$inferSelect;
 export type ChannelListing = typeof channelListings.$inferSelect;
+export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type PurchaseOrderLine = typeof purchaseOrderLines.$inferSelect;
 export type PaymentRecord = typeof paymentRecords.$inferSelect;
