@@ -4,7 +4,6 @@ import { payloadHash } from "./ebay/payload";
 import { cleanDraft, ebayDraftSchema } from "./ebay/schema";
 
 export const EBAY_WRITE_SCOPE = "https://api.ebay.com/oauth/api_scope/sell.inventory";
-export const EBAY_TAXONOMY_SCOPE = "https://api.ebay.com/oauth/api_scope/commerce.taxonomy.readonly";
 
 /** 发布中超过这个时间仍未结束，视为进程中断，允许重新推送恢复。 */
 export const STALE_PUBLISHING_MS = 5 * 60 * 1000;

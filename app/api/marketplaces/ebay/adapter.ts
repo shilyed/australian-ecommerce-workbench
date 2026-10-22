@@ -34,6 +34,7 @@ type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 export type EbayAdapterOptions = {
   accessToken: string;
+  getApplicationAccessToken: () => Promise<string>;
   marketplaceId: string;
   baseUrl: string;
   fetchImpl?: FetchLike;
@@ -89,14 +90,15 @@ export function createEbayAdapter(options: EbayAdapterOptions): MarketplaceAdapt
     method: "GET" | "POST" | "PUT",
     path: string,
     label: string,
-    body?: unknown
+    body?: unknown,
+    token = accessToken
   ): Promise<T | null> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const headers: Record<string, string> = {
         Accept: "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         "Accept-Language": language,
         "Content-Language": language,
         "X-EBAY-C-MARKETPLACE-ID": marketplaceId,
@@ -135,6 +137,11 @@ export function createEbayAdapter(options: EbayAdapterOptions): MarketplaceAdapt
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async function taxonomyGet<T>(path: string, label: string): Promise<T | null> {
+    const token = await options.getApplicationAccessToken();
+    return request<T>("GET", path, label, undefined, token);
   }
 
   async function findOfferIdBySku(sku: string): Promise<string | null> {
@@ -288,7 +295,7 @@ export function createEbayAdapter(options: EbayAdapterOptions): MarketplaceAdapt
           }),
           section<AspectOption>(async () => {
             if (!categoryId || !/^\d+$/.test(categoryId)) return [];
-            const data = await request<{
+            const data = await taxonomyGet<{
               aspects?: Array<{
                 localizedAspectName?: string;
                 aspectConstraint?: {
@@ -300,7 +307,6 @@ export function createEbayAdapter(options: EbayAdapterOptions): MarketplaceAdapt
                 aspectValues?: Array<{ localizedValue?: string }>;
               }>;
             }>(
-              "GET",
               `/commerce/taxonomy/v1/category_tree/${treeId}/get_item_aspects_for_category?category_id=${encodeURIComponent(categoryId)}`,
               "读取类目属性"
             );
@@ -321,13 +327,12 @@ export function createEbayAdapter(options: EbayAdapterOptions): MarketplaceAdapt
           section<CategorySuggestion>(async () => {
             const query = categoryQuery?.trim();
             if (!query) return [];
-            const data = await request<{
+            const data = await taxonomyGet<{
               categorySuggestions?: Array<{
                 category?: { categoryId?: string; categoryName?: string };
                 categoryTreeNodeAncestors?: Array<{ categoryName?: string }>;
               }>;
             }>(
-              "GET",
               `/commerce/taxonomy/v1/category_tree/${treeId}/get_category_suggestions?q=${encodeURIComponent(query)}`,
               "搜索 eBay 类目"
             );

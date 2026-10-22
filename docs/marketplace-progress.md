@@ -16,7 +16,7 @@
   - 下架必须填写原因。所有操作写审计日志。
   - 更新、发布、下架仅管理员可做；编辑草稿管理员和运营可做。
 - 接口 `marketplace.*`：list / get / createEbay / saveDraft / getOptions / push / publish / unpublish。
-- eBay 授权范围改为可写的 `sell.inventory`，并增加 `commerce.taxonomy.readonly`；刷新旧 token 时不会因新权限失败。
+- eBay 卖家授权使用可写的 `sell.inventory`；刷新旧 token 时只申请已获准的范围。类目接口另用 `client_credentials` 应用令牌和基础 `api_scope`，不向卖家申请不存在的类目 scope。
 - 已核实发布锁：Drizzle mysql2 的 `update` 返回原始 `[ResultSetHeader, FieldPacket[]]` 元组，`const [lock]` 可以正确读取 `affectedRows`，无需改写现有生产逻辑。新增回归覆盖真实 Drizzle 执行路径（仅 mock mysql2 传输）、零行抢锁失败、并发只发布一次和平台失败后的状态记录。
 
 ## 已完成（前端）
@@ -39,11 +39,11 @@
 4. 点击“核对并发布”，核对店铺、售价、数量、图片、类目属性和政策，再确认发布。
 5. 需要停售时点击“下架”，填写原因并确认；本地草稿和审计记录保留。
 
-已在 `app/` 下通过 `npm run check`、`npm test -- --run`（89 个测试）、`npm run build`，并在本地浏览器使用模拟数据验证保存、更新、确认发布、填写原因下架、每次操作后刷新、类目搜索和运营权限；未调用真实 eBay 写入接口。Windows PowerShell 若拦截 `npm.ps1`，使用同等的 `npm.cmd` 命令，不修改系统执行策略。
+已在 `app/` 下通过 `npm run check`、`npm test -- --run`（105 个测试，含授权修复回归）、`npm run build`，并在本地浏览器使用模拟数据验证保存、更新、确认发布、填写原因下架、每次操作后刷新、类目搜索和运营权限；未调用真实 eBay 写入接口。Windows PowerShell 若拦截 `npm.ps1`，使用同等的 `npm.cmd` 命令，不修改系统执行策略。
 
 ## 上线准备
 
-- 在工作台“设置 → 店铺连接”重新授权 eBay，获得 `sell.inventory` 和 `commerce.taxonomy.readonly` 权限。
+- 在工作台“设置 → 店铺连接”重新授权 eBay，获得 `sell.inventory` 刊登写入权限。类目查询由工作台自动获取应用级令牌，不需要卖家另行授予类目 scope。
 - 在 eBay 卖家后台开启 Business Policies，创建运费、付款、退货政策。
 - 创建发货地点（Inventory Location）。
 - 准备公开可访问的 https 商品图片地址。
@@ -58,3 +58,11 @@
 - 主地址：`http://124-221-221-165.nip.io:8080`；现有临时 HTTPS 地址在部署后也通过健康检查。
 - 数据库、原服务器代码改动和回滚镜像已保留，服务器原有修复已包含在发布版本中，`.env` 校验未变化。备份目录：`/opt/australian-ecommerce-workbench/backups/ebay-20261022-1d3187c`，原代码改动另保留在服务器 git stash 中。
 - 部署前后均为 29 个选品、28 家供应商、0 个 SKU，没有重复导入或自动创建商品。首次真实验收需要先建立 SKU，再按上述流程操作；本次没有对真实 eBay 刊登执行写入。
+
+## 授权机制修正（2026-10-22）
+
+- 真实重新授权返回 `invalid_scope`。已在生产应用的 OAuth Scopes 列表核实：`sell.inventory` 可用，但 `commerce.taxonomy.readonly` 不是可申请的权限，已从卖家授权和缺失权限检查中移除。
+- 按 [eBay 官方类目接口说明](https://developer.ebay.com/api-docs/commerce/taxonomy/resources/category_tree/methods/getItemAspectsForCategory)，类目搜索和属性查询使用独立的 `client_credentials` 应用令牌及基础 `https://api.ebay.com/oauth/api_scope`；政策、地点、库存和刊登操作继续使用卖家令牌。
+- 应用令牌仅保存在服务端内存中，合并并发请求，在到期前刷新；取令牌失败会保留分项错误，不使用卖家令牌冒充应用授权，也不会影响其他分项读取。
+- 新增回归覆盖生产授权 scope、旧卖家只读令牌刷新、应用令牌获取/并发/缓存/到期/失败重试，以及类目和卖家接口的令牌隔离。
+- 实际上架还需要 eBay 账户具备 Business Policies 资格、三类有效政策、真实发货地点及完整商品资料；授权修复不会自动创建这些业务数据或发布商品。

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createEbayAdapter } from "./adapter";
 import { draftFromSku, parseDimensions, payloadHash, toInventoryItem, toOffer } from "./payload";
 import { cleanDraft, type EbayListingPayload, validateEbayListing } from "./schema";
@@ -51,10 +51,14 @@ function fakeFetch(responses: Array<{ status: number; body?: unknown }>) {
   return { calls, fetchImpl };
 }
 
-function adapterWith(responses: Array<{ status: number; body?: unknown }>) {
+function adapterWith(
+  responses: Array<{ status: number; body?: unknown }>,
+  getApplicationAccessToken: () => Promise<string> = async () => "application-token"
+) {
   const fake = fakeFetch(responses);
   const adapter = createEbayAdapter({
     accessToken: "token",
+    getApplicationAccessToken,
     marketplaceId: "EBAY_AU",
     baseUrl: "https://api.ebay.com",
     fetchImpl: fake.fetchImpl,
@@ -257,5 +261,59 @@ describe("eBay adapter", () => {
     expect(options.fulfillmentPolicies.items).toEqual([{ id: "f1", name: "Free post", description: null }]);
     expect(options.paymentPolicies.error).toMatch(/Access denied/);
     expect(options.aspects.items).toEqual([]);
+  });
+
+  it("uses application tokens for Taxonomy and seller tokens for account and location reads", async () => {
+    const { adapter, calls } = adapterWith([
+      { status: 200, body: { fulfillmentPolicies: [] } },
+      { status: 200, body: { paymentPolicies: [] } },
+      { status: 200, body: { returnPolicies: [] } },
+      { status: 200, body: { locations: [] } },
+      { status: 200, body: { aspects: [{ localizedAspectName: "Brand", aspectConstraint: { aspectRequired: true } }] } },
+      { status: 200, body: { categorySuggestions: [{ category: { categoryId: "20625", categoryName: "Cups" } }] } },
+    ]);
+    const options = await adapter.fetchOptions({ categoryId: "20625", categoryQuery: "tea cup" });
+    const taxonomyCalls = calls.filter(call => new URL(call.url).pathname.startsWith("/commerce/taxonomy/"));
+    const sellerCalls = calls.filter(call => new URL(call.url).pathname.startsWith("/sell/"));
+
+    expect(taxonomyCalls).toHaveLength(2);
+    expect(taxonomyCalls.every(call => call.headers.Authorization === "Bearer application-token")).toBe(true);
+    expect(sellerCalls).toHaveLength(4);
+    expect(sellerCalls.every(call => call.headers.Authorization === "Bearer token")).toBe(true);
+    expect(options.aspects.items[0]).toMatchObject({ name: "Brand", required: true });
+    expect(options.categories.items[0]).toMatchObject({ id: "20625", name: "Cups" });
+  });
+
+  it("keeps seller options available and never falls back to a seller token when application auth fails", async () => {
+    const { adapter, calls } = adapterWith([
+      { status: 200, body: { fulfillmentPolicies: [{ fulfillmentPolicyId: "f1", name: "Standard" }] } },
+      { status: 200, body: { paymentPolicies: [] } },
+      { status: 200, body: { returnPolicies: [] } },
+      { status: 200, body: { locations: [] } },
+    ], async () => { throw new Error("Application authorization unavailable"); });
+    const options = await adapter.fetchOptions({ categoryId: "20625", categoryQuery: "tea cup" });
+
+    expect(options.fulfillmentPolicies.items[0]?.id).toBe("f1");
+    expect(options.aspects.error).toContain("Application authorization unavailable");
+    expect(options.categories.error).toContain("Application authorization unavailable");
+    expect(calls).toHaveLength(4);
+    expect(calls.every(call => new URL(call.url).pathname.startsWith("/sell/"))).toBe(true);
+  });
+
+  it("does not require an application token to push, publish or withdraw an offer", async () => {
+    const getApplicationAccessToken = vi.fn(async () => {
+      throw new Error("Should not request Taxonomy authorization");
+    });
+    const { adapter } = adapterWith([
+      { status: 204 },
+      { status: 204 },
+      { status: 200, body: { listingId: "1234567890" } },
+      { status: 200, body: { listingId: "1234567890" } },
+    ], getApplicationAccessToken);
+
+    await adapter.createOrUpdate(validPayload, "offer-1");
+    await adapter.publish("offer-1");
+    await adapter.unpublish("offer-1");
+    expect(getApplicationAccessToken).not.toHaveBeenCalled();
   });
 });

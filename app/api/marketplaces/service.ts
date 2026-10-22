@@ -11,6 +11,7 @@ import { integrationEnv } from "../lib/env";
 import { getDb } from "../queries/connection";
 import { audit } from "../modules/workbench/operations";
 import { getStoreCredentials, getValidAccessToken } from "../integrations/store-service";
+import { getEbayApplicationAccessToken } from "../integrations/providers";
 import { IntegrationError } from "../integrations/types";
 import { createEbayAdapter } from "./ebay/adapter";
 import { draftFromSku, payloadHash } from "./ebay/payload";
@@ -20,7 +21,6 @@ import {
   assertPublishable,
   assertPushable,
   assertUnpublishable,
-  EBAY_TAXONOMY_SCOPE,
   EBAY_WRITE_SCOPE,
   hasScope,
   hasUnpushedChanges,
@@ -127,6 +127,7 @@ async function ebayAdapterFor(storeConnectionId: number) {
   const { accessToken } = await getValidAccessToken(storeConnectionId);
   return createEbayAdapter({
     accessToken,
+    getApplicationAccessToken: getEbayApplicationAccessToken,
     marketplaceId: integrationEnv.ebay.marketplaceId,
     baseUrl: ebayBaseUrl(),
   });
@@ -277,7 +278,7 @@ export async function getOptions(input: {
     const { credentials } = await getStoreCredentials(input.storeConnectionId);
     const adapter = await ebayAdapterFor(input.storeConnectionId);
     const options = await adapter.fetchOptions(input);
-    const missingScopes = [EBAY_WRITE_SCOPE, EBAY_TAXONOMY_SCOPE].filter(
+    const missingScopes = [EBAY_WRITE_SCOPE].filter(
       scope => !hasScope(credentials?.scopes, scope)
     );
     return { ...options, missingScopes };

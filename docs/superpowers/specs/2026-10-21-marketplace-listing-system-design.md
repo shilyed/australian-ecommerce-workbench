@@ -321,11 +321,12 @@ published -> unpublished
 新增 scope：
 
 - `https://api.ebay.com/oauth/api_scope/sell.inventory`
-- `https://api.ebay.com/oauth/api_scope/commerce.taxonomy.readonly`
 
 保留现有只读 scope。
 
 升级 scope 后必须重新授权 eBay 店铺。现有只读令牌不能用于发布。
+
+类目建议和类目属性通过 `client_credentials` 应用令牌读取，scope 为 `https://api.ebay.com/oauth/api_scope`。`commerce.taxonomy.readonly` 并非有效的卖家授权范围，申请它会导致整个 OAuth 授权返回 `invalid_scope`。参见 [eBay 官方 Taxonomy 说明](https://developer.ebay.com/api-docs/commerce/taxonomy/resources/category_tree/methods/getItemAspectsForCategory)。
 
 ## 错误处理
 

@@ -14,13 +14,13 @@ const ETSY_TOKEN_URL = "https://api.etsy.com/v3/public/oauth/token";
 const ETSY_API_BASE = "https://openapi.etsy.com/v3/application";
 const ETSY_SCOPES = ["profile_r", "shops_r", "listings_r", "transactions_r"];
 
+const EBAY_APPLICATION_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const EBAY_SCOPES = [
-  "https://api.ebay.com/oauth/api_scope",
+  EBAY_APPLICATION_SCOPE,
   "https://api.ebay.com/oauth/api_scope/sell.inventory",
   "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
   "https://api.ebay.com/oauth/api_scope/sell.account.readonly",
   "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
-  "https://api.ebay.com/oauth/api_scope/commerce.taxonomy.readonly",
 ];
 
 const EBAY_MARKETPLACE_HOSTS: Record<string, string> = {
@@ -374,6 +374,55 @@ function ebayBasicAuth(): string {
   return Buffer.from(
     `${integrationEnv.ebay.clientId}:${integrationEnv.ebay.clientSecret}`,
   ).toString("base64");
+}
+
+let ebayApplicationToken: { accessToken: string; expiresAt: number } | undefined;
+let ebayApplicationTokenRequest: Promise<string> | undefined;
+
+async function requestEbayApplicationAccessToken(): Promise<string> {
+  if (!integrationEnv.ebay.clientId || !integrationEnv.ebay.clientSecret) {
+    throw new IntegrationError("缺少 eBay 应用凭证，无法读取类目");
+  }
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    scope: EBAY_APPLICATION_SCOPE,
+  });
+  const json = await requestJson<EbayTokenResponse>(
+    `${ebayBaseUrl()}/identity/v1/oauth2/token`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${ebayBasicAuth()}`,
+      },
+      body: body.toString(),
+    },
+    "eBay 获取类目应用令牌",
+  );
+  if (typeof json.access_token !== "string" || !json.access_token.trim()) {
+    throw new IntegrationError("eBay 未返回有效的应用 access_token");
+  }
+  if (typeof json.expires_in !== "number" || !Number.isFinite(json.expires_in) || json.expires_in <= 0) {
+    throw new IntegrationError("eBay 未返回有效的应用令牌有效期");
+  }
+  ebayApplicationToken = {
+    accessToken: json.access_token,
+    expiresAt: Date.now() + json.expires_in * 1000,
+  };
+  return json.access_token;
+}
+
+/** Taxonomy 使用 client_credentials 应用令牌，不属于卖家授权范围。 */
+export async function getEbayApplicationAccessToken(): Promise<string> {
+  if (ebayApplicationToken && ebayApplicationToken.expiresAt > Date.now() + 60_000) {
+    return ebayApplicationToken.accessToken;
+  }
+  if (!ebayApplicationTokenRequest) {
+    ebayApplicationTokenRequest = requestEbayApplicationAccessToken().finally(() => {
+      ebayApplicationTokenRequest = undefined;
+    });
+  }
+  return ebayApplicationTokenRequest;
 }
 
 async function ebayExchangeCode(code: string, origin: string): Promise<TokenSet> {

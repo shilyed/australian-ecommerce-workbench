@@ -27,7 +27,7 @@ GEMA 结构已调研完毕，不需要再登录 GEMA。不要索取或记录任�
 - `app/db/migrations/0003_marketplace_listings.sql`（被 .gitignore 忽略，提交时用 `git add -f`）。
 - `app/api/marketplaces/`：`types.ts`、`state.ts`、`service.ts`、`router.ts`、`ebay/schema.ts`、`ebay/payload.ts`、`ebay/adapter.ts`、`ebay/adapter.test.ts`。
 - `app/api/router.ts` 注册 `marketplace` 路由。
-- `app/api/integrations/providers.ts`、`store-service.ts`：eBay scope 改为 `sell.inventory` + `commerce.taxonomy.readonly`；刷新 token 只用已授予的 scope。
+- `app/api/integrations/providers.ts`、`store-service.ts`：eBay 卖家 scope 使用 `sell.inventory`；刷新 token 只用已授予的 scope。Taxonomy 改用 `client_credentials` 应用令牌及基础 `api_scope`，不能把不存在的 `commerce.taxonomy.readonly` 放进卖家授权请求。
 - tRPC 接口：`marketplace.list({skuId})`、`get({listingId})`、`createEbay({skuId, storeConnectionId})`、`saveDraft({listingId, payload})`、`getOptions({storeConnectionId, categoryId?, categoryQuery?})`（返回政策/地点/aspects/categories，各为 `{items, error}`，另有 `missingScopes`）、`push({listingId})`、`publish({listingId, confirm: true})`、`unpublish({listingId, confirm: true, reason})`。
 - `get` 返回 `{ listing, sku, store, canWriteToPlatform, marketplaceId }`；listing 带 `localPayload`、`hasUnpushedChanges`、`status`、`externalOfferId`、`externalListingId`、`listingUrl`、`lastError`、`lastPushedAt`。
 - 待核实：`service.ts` 中 `publishListing` 用 `const [lock] = await db.update(...)` 读取 `affectedRows`，需确认 drizzle mysql2 返回结构（`[ResultSetHeader, ...]`）。
@@ -60,7 +60,7 @@ GEMA 结构已调研完毕，不需要再登录 GEMA。不要索取或记录任�
 
 ## 上线后需要用户操作
 
-- 设置页重新授权 eBay（获得刊登写入与类目权限）。
+- 设置页重新授权 eBay（获得刊登写入权限；类目读取由服务端应用级令牌处理）。
 - eBay 卖家后台开启 Business Policies，建好运费、付款、退货政策；创建发货地点。
 - 准备公开的 https 图片链接。
 - 用一件真实商品走完：创建草稿 → 保存 → 更新到 eBay → 核对 → 发布 → 下架。

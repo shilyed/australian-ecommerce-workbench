@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { marketplaceListings, storeConnections, type MarketplaceListing } from "@db/schema";
 import { cleanDraft, type EbayListingPayload } from "./ebay/schema";
 import { payloadHash } from "./ebay/payload";
-import { publishListing } from "./service";
+import { getOptions, publishListing } from "./service";
 import { EBAY_WRITE_SCOPE } from "./state";
 
 const mocks = vi.hoisted(() => ({
@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   insert: vi.fn(),
   publish: vi.fn(),
+  fetchOptions: vi.fn(),
   audit: vi.fn(),
   getStoreCredentials: vi.fn(),
   getValidAccessToken: vi.fn(),
@@ -27,7 +28,7 @@ vi.mock("../integrations/store-service", () => ({
   getValidAccessToken: mocks.getValidAccessToken,
 }));
 vi.mock("./ebay/adapter", () => ({
-  createEbayAdapter: () => ({ publish: mocks.publish }),
+  createEbayAdapter: () => ({ publish: mocks.publish, fetchOptions: mocks.fetchOptions }),
 }));
 
 function resultHeader(affectedRows: number): ResultSetHeader {
@@ -70,6 +71,37 @@ describe("Drizzle mysql2 update results", () => {
     } finally {
       await client.end();
     }
+  });
+});
+
+describe("marketplace options authorization", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.select.mockReturnValue({
+      from: () => ({ where: () => ({ limit: async () => [{ id: 1, platform: "ebay" }] }) }),
+    });
+    mocks.getValidAccessToken.mockResolvedValue({ accessToken: "test-access-token" });
+    const empty = () => ({ items: [], error: null });
+    mocks.fetchOptions.mockResolvedValue({
+      fulfillmentPolicies: empty(),
+      paymentPolicies: empty(),
+      returnPolicies: empty(),
+      locations: empty(),
+      aspects: empty(),
+      categories: empty(),
+    });
+  });
+
+  it("does not ask the seller for a nonexistent Taxonomy scope", async () => {
+    mocks.getStoreCredentials.mockResolvedValue({ credentials: { scopes: EBAY_WRITE_SCOPE } });
+    const result = await getOptions({ storeConnectionId: 1 });
+    expect(result.missingScopes).toEqual([]);
+  });
+
+  it("still reports missing seller inventory write permission", async () => {
+    mocks.getStoreCredentials.mockResolvedValue({ credentials: { scopes: `${EBAY_WRITE_SCOPE}.readonly` } });
+    const result = await getOptions({ storeConnectionId: 1 });
+    expect(result.missingScopes).toEqual([EBAY_WRITE_SCOPE]);
   });
 });
 
