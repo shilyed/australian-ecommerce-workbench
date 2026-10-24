@@ -21,12 +21,10 @@ type FormProps = {
 
 function Field({
   title,
-  hint,
   children,
   className = "",
 }: {
   title: string;
-  hint?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -34,9 +32,6 @@ function Field({
     <label className={`grid min-w-0 content-start gap-2 ${className}`}>
       <span className="text-xs font-semibold">{title}</span>
       {children}
-      {hint && (
-        <span className="text-xs leading-5 text-muted-foreground">{hint}</span>
-      )}
     </label>
   );
 }
@@ -111,10 +106,9 @@ export function SupplierForm(props: FormProps) {
           name="name"
           maxLength={255}
           className="sourcing-input"
-          placeholder="填写公司或店铺名称"
         />
       </Field>
-      <Field title="1688 店铺链接" hint="选填，用于快速返回货源店铺。">
+      <Field title="1688 店铺链接">
         <Input
           name="shopUrl"
           type="url"
@@ -139,15 +133,8 @@ export function SupplierForm(props: FormProps) {
           />
         </Field>
       </div>
-      <Field
-        title="履约 / 异常记录"
-        hint="记录交期、沟通情况或需要跟进的问题。"
-      >
-        <Textarea
-          name="notes"
-          className="sourcing-textarea min-h-32"
-          placeholder="补充供应商信息…"
-        />
+      <Field title="履约 / 异常记录">
+        <Textarea name="notes" className="sourcing-textarea min-h-32" />
       </Field>
     </FormFrame>
   );
@@ -163,9 +150,6 @@ export function CandidateForm({
       submitLabel="创建候选"
       submitDisabled={suppliers.length === 0}
     >
-      <p className="text-xs leading-5 text-muted-foreground">
-        先保存货源与报价，再跟进样品和渠道判断。创建候选不会自动采购或上架。
-      </p>
       <Field title="内部名称 *">
         <Input
           required
@@ -173,13 +157,9 @@ export function CandidateForm({
           name="name"
           maxLength={255}
           className="sourcing-input"
-          placeholder="给候选商品一个便于识别的名称"
         />
       </Field>
-      <Field
-        title="1688 商品链接 *"
-        hint="同一链接可以保留不同规格；检测到重复来源时会明确提示。"
-      >
+      <Field title="1688 商品链接 *">
         <Input
           required
           name="sourceUrl"
@@ -208,7 +188,7 @@ export function CandidateForm({
       </Field>
       {suppliers.length === 0 && (
         <p role="alert" className="sourcing-warning-text text-sm">
-          请先关闭抽屉并新增供应商，再创建选品候选。
+          请先添加供应商。
         </p>
       )}
       <Field title="候选规格 *">
@@ -264,11 +244,7 @@ export function CandidateForm({
         </Field>
       </div>
       <Field title="备注">
-        <Textarea
-          name="notes"
-          className="sourcing-textarea min-h-24"
-          placeholder="样品要求、待核实信息或其他备注…"
-        />
+        <Textarea name="notes" className="sourcing-textarea min-h-24" />
       </Field>
     </FormFrame>
   );
@@ -291,7 +267,6 @@ export function OperationForm({
       }
     >
       <div className="border-b pb-4">
-        <p className="text-xs text-muted-foreground">当前候选</p>
         <p className="mt-1 font-semibold leading-6">{candidate.name}</p>
       </div>
       {operation.kind === "status" && (
@@ -301,16 +276,12 @@ export function OperationForm({
             <ArrowRight className="h-4 w-4 text-muted-foreground" aria-hidden />
             <strong>{label(nextCandidateStatus(candidate))}</strong>
           </div>
-          <Field
-            title="状态推进 / 决策说明 *"
-            hint="样品评分和评估记录会保留；请说明本次推进的依据。"
-          >
+          <Field title="状态推进 / 决策说明 *">
             <Textarea
               required
               autoFocus
               name="decisionNote"
               className="sourcing-textarea min-h-32"
-              placeholder="记录本次决定与待跟进事项…"
             />
           </Field>
         </>
@@ -319,14 +290,10 @@ export function OperationForm({
         <>
           <div className="sourcing-notice items-start">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <p>
-              此处仅记录 {operation.platform === "etsy" ? "Etsy" : "eBay"}{" "}
-              的业务适售判断， 不代表平台审核通过，也不会提交或发布商品。
-            </p>
+            <p>仅记录业务判断，不代表平台审核通过。</p>
           </div>
           <Field
-            title={`${operation.platform === "etsy" ? "Etsy 创意 / 生产合作披露" : "eBay / 澳洲产品安全"}判断依据 *`}
-            hint="至少填写 3 个字符，保留可核对的依据；不能仅凭样品评分确认可售。"
+            title={`${operation.platform === "etsy" ? "Etsy 创意 / 生产合作披露" : "eBay / 澳洲产品安全"}依据（至少 3 字）*`}
           >
             <Textarea
               required
@@ -334,7 +301,6 @@ export function OperationForm({
               minLength={3}
               name="basis"
               className="sourcing-textarea min-h-40"
-              placeholder="说明已核对的材料、适售依据与限制…"
             />
           </Field>
         </>
@@ -342,8 +308,7 @@ export function OperationForm({
       {operation.kind === "convert" && (
         <>
           <p className="text-sm leading-6 text-muted-foreground">
-            将建立正式
-            SKU，并保留当前候选资料与决策记录。此操作不会自动采购、创建平台刊登或发布商品。
+            仅创建内部 SKU，不会上架。
           </p>
           <Field title="全局唯一 SKU 编码 *">
             <Input
@@ -360,7 +325,6 @@ export function OperationForm({
               required
               name="decisionNote"
               className="sourcing-textarea min-h-32"
-              placeholder="说明为什么采用此候选，以及进入采购前的注意事项…"
             />
           </Field>
         </>

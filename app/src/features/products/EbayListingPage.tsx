@@ -330,7 +330,6 @@ function EbayListingEditor({
       <PageHeader
         eyebrow={`eBay 市场详情 · ${sku.code}`}
         title={sku.productName || sku.name}
-        description="保存草稿只保存在工作台；更新到 eBay 使用已保存的草稿。新刊登需要核对后单独发布；已在售商品更新后会直接改动线上内容。"
         actions={
           listing.listingUrl ? (
             <Button asChild variant="outline">
@@ -482,8 +481,7 @@ function EbayListingEditor({
                     }
                   />
                   <span className="text-xs text-muted-foreground">
-                    推送时需要 1–12 张公开可访问的 https
-                    图片，不会自动上传本地图片。
+                    1–12 个公开 HTTPS 图片地址。
                   </span>
                 </label>
               </div>
@@ -887,15 +885,14 @@ function EbayListingEditor({
             <div className="p-4 text-sm">
               {issues.length > 0 ? (
                 <>
-                  <p>还需补全或修正：</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <ul className="list-disc space-y-1 pl-5">
                     {issues.map(issue => (
                       <li key={issue}>{issue}</li>
                     ))}
                   </ul>
                 </>
               ) : (
-                <p>基础资料已完整，最终以 eBay 校验结果为准。</p>
+                <p>资料完整</p>
               )}
               {canEdit && form.categoryId && !categoryChecked ? (
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -936,11 +933,14 @@ function EbayListingEditor({
               >
                 {unpublish.isPending ? "下架中…" : "下架"}
               </Button>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {canEdit
-                  ? "管理员和运营可编辑、保存草稿；仅管理员可更新到 eBay、发布和下架。"
-                  : "当前角色仅可查看，不能编辑或操作 eBay 刊登。"}
-              </p>
+              {listing.status === "published" && (
+                <p className="text-xs text-destructive">
+                  更新会立即修改在售商品。
+                </p>
+              )}
+              {!canEdit && (
+                <p className="text-xs text-muted-foreground">当前角色只读。</p>
+              )}
             </div>
           </section>
         </aside>
@@ -1053,7 +1053,6 @@ export default function EbayListingPage() {
     return (
       <EmptyPanel
         title="商品编号无效"
-        description="请从库存页选择商品后进入 eBay 详情。"
         action={
           <Button asChild>
             <Link to="/inventory">返回库存</Link>
@@ -1075,7 +1074,6 @@ export default function EbayListingPage() {
     return (
       <EmptyPanel
         title="尚未创建 eBay 详情"
-        description="请先在主商品页创建 eBay 草稿。"
         action={
           <Button asChild>
             <Link to={`/products/${skuId}`}>返回主商品</Link>

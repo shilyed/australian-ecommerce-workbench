@@ -177,6 +177,8 @@ Do:
 - Make the next useful action and current business state easy to identify.
 - Use black/white hierarchy, concise text, flat surfaces, and consistent alignment.
 - Keep financial caveats, platform errors, and compliance warnings legible.
+- Keep visible copy limited to labels, actual data/state, validation errors, and
+  essential risk confirmations. Avoid explanatory paragraphs under action buttons.
 - Preserve all existing business contracts, permission checks, and confirmations.
 
 Do not:
@@ -187,6 +189,9 @@ Do not:
   display headings merely to imitate the reference.
 - Remove necessary status colors, error messages, or field labels for minimalism.
 - Hide essential actions behind hover-only controls.
+- Add header slogans, repeated workflow tutorials, architectural explanations,
+  or reassuring "this will not automatically..." notes to ordinary list pages.
+  Put mandatory consequences only beside the relevant risky action or confirmation.
 - Change APIs, database schema, workflow transitions, or deployments as part of
   applying this visual guide without a separate requirement.
 

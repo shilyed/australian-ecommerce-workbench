@@ -223,11 +223,18 @@ describe("merchant workspace page wiring", () => {
     try {
       const html = render(<FinancePage />, "/finance");
       expect(html).toContain("暂无订单财务数据");
-      expect(html).toContain("不会生成演示趋势或虚构利润");
       expect(html).not.toContain('name="rate"');
       expect(html).not.toContain("recharts-responsive-container");
     } finally {
       fixture.permissions.finance = false;
     }
+  });
+  it("keeps daily action links and values without repetitive tutorials", () => {
+    const html = render(<OverviewPage />, "/");
+    expect(html).toContain('href="/orders?queue=blocked"');
+    expect(html).toContain("已核实贡献利润");
+    expect(html).not.toContain("先看生意");
+    expect(html).not.toContain("已付款且无缺货或商品匹配问题");
+    expect(html).not.toContain("先处理卡住订单的问题");
   });
 });

@@ -101,12 +101,7 @@ export default function FinancePage() {
     );
   if (!data) return null;
   if (!data.permissions.finance) {
-    return (
-      <EmptyPanel
-        title="当前角色无财务权限"
-        description="履约角色默认不能查看采购成本、利润和结算。服务端已按权限拦截，前端隐藏不是唯一措施。"
-      />
-    );
+    return <EmptyPanel title="当前角色无财务权限" />;
   }
 
   const submitRate = (event: FormEvent<HTMLFormElement>) => {
@@ -152,7 +147,6 @@ export default function FinancePage() {
       <PageHeader
         eyebrow="财务 / 经营核对"
         title="利润与到账"
-        description="展示订单贡献利润而非企业净利润。金额保存原币、方向明确的汇率快照和 AUD 报表金额；缺汇率或费用时明示不完整，不用 1:1 或零成本补齐。"
         actions={
           <>
             <Button
@@ -185,17 +179,11 @@ export default function FinancePage() {
           <p className="metric-value mt-3">
             {totals.total ? money(totals.net) : "—"}
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            不含平台代收代缴税
-          </p>
         </div>
         <div className="ops-panel p-4">
-          <p className="ops-label">贡献利润合计</p>
+          <p className="ops-label">订单贡献利润</p>
           <p className="metric-value mt-3">
             {totals.total ? money(totals.contribution) : "—"}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            订单口径，非企业净利润
           </p>
         </div>
         <div className="ops-panel p-4">
@@ -208,14 +196,11 @@ export default function FinancePage() {
           </p>
         </div>
         <div className="ops-panel p-4">
-          <p className="ops-label">CNY 当前快照</p>
+          <p className="ops-label">CNY → AUD</p>
           <p className="metric-value mt-3">
             {data.exchangeRates.at(0)
               ? Number(data.exchangeRates.at(0)!.rate).toFixed(6)
               : "待补"}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            统一方向：1 CNY 对应 AUD
           </p>
         </div>
       </div>
@@ -225,9 +210,6 @@ export default function FinancePage() {
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title">销售与贡献利润</h2>
-              <p className="ops-subtitle">
-                按原订单期间归属最新修订；调整日期另存，不锁定会计期间
-              </p>
             </div>
             <BarChart3 className="h-4 w-4 text-primary" />
           </div>
@@ -288,10 +270,7 @@ export default function FinancePage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyPanel
-              title="暂无订单财务数据"
-              description="订单、成本和费用录入后，会在这里按真实数据展示；不会生成演示趋势或虚构利润。"
-            />
+            <EmptyPanel title="暂无订单财务数据" />
           )}
           {data.report.length > 0 && (
             <div className="table-scroll border-t">
@@ -346,7 +325,7 @@ export default function FinancePage() {
                                 row.profitStatus === "verified"
                                   ? "撤销利润核实"
                                   : "核实订单利润",
-                              description: `${row.orderNo}：收入、成本和费用应分别核对，操作将写入审计记录。`,
+                              description: row.orderNo,
                               fields: [
                                 {
                                   name: "reason",
@@ -382,7 +361,6 @@ export default function FinancePage() {
         <div className="space-y-4">
           <FormSheet
             title="新增汇率快照"
-            description="统一方向为 1 CNY 对应多少 AUD，历史成本不会静默重算。"
             open={params.get("panel") === "rate"}
             onOpenChange={open => setPanel("rate", open)}
             pending={addRate.isPending}
@@ -420,15 +398,11 @@ export default function FinancePage() {
                 />
               </label>
               <Button className="min-h-11">保存快照</Button>
-              <p className="text-xs leading-5 text-muted-foreground">
-                示例：1 CNY = 0.20 AUD。修改默认汇率不会重算历史批次。
-              </p>
             </form>
           </FormSheet>
 
           <FormSheet
             title="订单费用 / 估算替换"
-            description="保留原币和汇率依据，实际费用替换估算时保留历史。"
             open={params.get("panel") === "cost"}
             onOpenChange={open => setPanel("cost", open)}
             pending={addCost.isPending}
@@ -516,9 +490,6 @@ export default function FinancePage() {
               <Button className="min-h-11" variant="secondary">
                 保存费用
               </Button>
-              <p className="text-xs leading-5 text-muted-foreground">
-                实际值替换估算值时保留替换历史；同一源费用不得重复入账。
-              </p>
             </form>
           </FormSheet>
         </div>
@@ -528,17 +499,11 @@ export default function FinancePage() {
         <div className="ops-panel-header">
           <div>
             <h2 className="ops-title">平台到账核对</h2>
-            <p className="ops-subtitle">
-              平台净放款、银行实际到账和订单利润是三种不同口径；不能按到账日重复计销售收入
-            </p>
           </div>
           <CheckCheck className="h-4 w-4 text-primary" />
         </div>
         {data.settlements.length === 0 ? (
-          <EmptyPanel
-            title="暂无结算批次"
-            description="平台放款与银行到账需要单独核对；这里不会把到账重复计入销售收入。"
-          />
+          <EmptyPanel title="暂无结算批次" />
         ) : (
           <div className="table-scroll">
             <table className="ops-table">
@@ -592,7 +557,7 @@ export default function FinancePage() {
                         onClick={() => {
                           setDecision({
                             title: "核对银行实际到账",
-                            description: `${settlement.referenceNo}：平台放款、银行到账和订单利润是不同口径，不会重复计收入。`,
+                            description: settlement.referenceNo,
                             fields: [
                               {
                                 name: "amount",

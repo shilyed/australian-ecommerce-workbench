@@ -35,7 +35,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -50,7 +49,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -174,9 +172,6 @@ function CandidateDetails({
         </section>
         <section aria-label="渠道适售判断">
           <h3 className="text-base font-semibold">渠道适售判断</h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            业务确认不等于平台审核通过；样品评分不是合规证明。
-          </p>
           <div className="mt-3 divide-y border-y">
             {(["etsy", "ebay"] as const).map(platform => (
               <div
@@ -497,7 +492,6 @@ export default function SourcingPage() {
         <PageHeader
           eyebrow="工作台 / 商品准备"
           title="选品与供应商"
-          description="比较货源，跟进样品与渠道判断。让每一次采用，都有据可查。"
           actions={
             <>
               <Button
@@ -562,9 +556,7 @@ export default function SourcingPage() {
         </p>
       )}
       {!canEdit && (
-        <p className="mb-4 text-sm text-muted-foreground">
-          当前角色仅可浏览，新增、渠道判断及转 SKU 操作需由管理员或运营处理。
-        </p>
+        <p className="mb-4 text-sm text-muted-foreground">当前角色只读。</p>
       )}
 
       <dl className="sourcing-summary" aria-label="选品概览">
@@ -572,25 +564,21 @@ export default function SourcingPage() {
           {
             title: "全部候选",
             value: summary.total,
-            detail: "集中管理货源与规格",
             filter: "all",
           },
           {
             title: "样品评估",
             value: summary.evaluating,
-            detail: "正在核对样品表现",
             filter: "sample_evaluation",
           },
           {
             title: "待决策",
             value: summary.deciding,
-            detail: "等待下一步业务决定",
             filter: "pending_decision",
           },
           {
             title: "已转 SKU",
             value: summary.converted,
-            detail: "候选记录继续保留",
             filter: "converted",
           },
         ].map(item => (
@@ -618,9 +606,6 @@ export default function SourcingPage() {
               >
                 {item.value.toString().padStart(2, "0")}
               </button>
-              <span className="block text-xs leading-5 text-muted-foreground">
-                {item.detail}
-              </span>
             </dd>
           </div>
         ))}
@@ -713,13 +698,12 @@ export default function SourcingPage() {
           <div className="sourcing-notice mb-5">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <div>
-              <p>
-                渠道判断需单独核对。Etsy 普通 1688
-                现货不可默认按原创或手工商品上架。
-              </p>
-              <p className="mt-1 text-muted-foreground">
-                样品评分不是合规证明 · 最近核对 {dateTime(summary.lastChecked)}
-              </p>
+              <p>Etsy 现货不可默认按原创或手工商品上架。</p>
+              {summary.lastChecked && (
+                <p className="mt-1 text-muted-foreground">
+                  最近核对 {dateTime(summary.lastChecked)}
+                </p>
+              )}
             </div>
           </div>
           {candidates.length === 0 ? (
@@ -727,13 +711,11 @@ export default function SourcingPage() {
               <EmptyPanel
                 title={
                   data.candidates.length === 0
-                    ? "从第一个选品候选开始"
+                    ? "暂无选品候选"
                     : "没有找到匹配候选"
                 }
                 description={
-                  data.suppliers.length === 0
-                    ? "先登记供应商，再保存货源、规格与采购报价。"
-                    : "保留不同规格的货源方案，再逐步跟进样品和渠道判断。"
+                  data.suppliers.length === 0 ? "请先添加供应商。" : undefined
                 }
                 action={
                   hasFilters ? (
@@ -850,10 +832,6 @@ export default function SourcingPage() {
               </ul>
             </>
           )}
-          <p className="py-5 text-xs leading-5 text-muted-foreground">
-            每个候选独立保留规格与决策记录。渠道未确认的商品仍需核对，不会因转为
-            SKU 自动上架。
-          </p>
         </TabsContent>
 
         <TabsContent value="suppliers" className="mt-0 outline-none">
@@ -861,11 +839,8 @@ export default function SourcingPage() {
             <div className="sourcing-empty">
               <EmptyPanel
                 title={
-                  data.suppliers.length
-                    ? "没有找到匹配供应商"
-                    : "建立你的供应商清单"
+                  data.suppliers.length ? "没有找到匹配供应商" : "暂无供应商"
                 }
-                description="集中记录店铺、联系人与履约情况，让货源信息有处可查。"
                 action={
                   query ? (
                     <Button
@@ -957,6 +932,7 @@ export default function SourcingPage() {
         <SheetContent
           className="nike-workspace sourcing-sheet"
           showCloseButton={false}
+          aria-describedby={undefined}
           onCloseAutoFocus={event => {
             event.preventDefault();
             (panelOpener.current?.isConnected
@@ -966,13 +942,13 @@ export default function SourcingPage() {
           }}
         >
           <SheetHeader className="relative border-b p-6 pr-16">
-            <p className="mb-1 text-xs text-muted-foreground">
-              {creatingCandidate || creatingSupplier
-                ? "新建记录"
-                : view === "candidates"
+            {!creatingCandidate && !creatingSupplier && (
+              <p className="mb-1 text-xs text-muted-foreground">
+                {view === "candidates"
                   ? `选品记录 #${focusId}`
                   : `供应商 #${focusId}`}
-            </p>
+              </p>
+            )}
             <SheetTitle className="text-xl leading-7">
               {creatingCandidate
                 ? "新增选品候选"
@@ -982,11 +958,6 @@ export default function SourcingPage() {
                     ? (focusedCandidate?.name ?? "候选不可用")
                     : (focusedSupplier?.name ?? "供应商不可用")}
             </SheetTitle>
-            <SheetDescription>
-              {creatingCandidate || creatingSupplier
-                ? "必填项已标记 *，其余信息可后续核对。"
-                : "查看完整信息，并继续处理下一步。"}
-            </SheetDescription>
             <Button
               variant="ghost"
               size="icon"
@@ -1089,10 +1060,7 @@ export default function SourcingPage() {
             </>
           ) : (
             <div className="sourcing-empty p-6">
-              <EmptyPanel
-                title="这条记录当前不可用"
-                description="它可能已被更新或移除。关闭抽屉后刷新列表，或选择其他记录。"
-              />
+              <EmptyPanel title="这条记录当前不可用" />
             </div>
           )}
         </SheetContent>
@@ -1107,6 +1075,7 @@ export default function SourcingPage() {
         <DialogContent
           showCloseButton={false}
           className="nike-workspace sourcing-operation"
+          aria-describedby={undefined}
           onCloseAutoFocus={event => {
             if (operationOpener.current?.isConnected) {
               event.preventDefault();
@@ -1122,9 +1091,6 @@ export default function SourcingPage() {
                   ? `${operation.platform === "etsy" ? "Etsy" : "eBay"} 渠道判断`
                   : "转为正式 SKU"}
             </DialogTitle>
-            <DialogDescription>
-              填写依据后确认保存，操作将保留审计记录。
-            </DialogDescription>
             <Button
               variant="ghost"
               size="icon"
@@ -1158,9 +1124,7 @@ export default function SourcingPage() {
         <AlertDialogContent className="nike-workspace">
           <AlertDialogHeader>
             <AlertDialogTitle>放弃尚未保存的内容？</AlertDialogTitle>
-            <AlertDialogDescription>
-              关闭后，本次填写的内容不会保存；已有记录不受影响。
-            </AlertDialogDescription>
+            <AlertDialogDescription>未保存内容将丢失。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="nike-button">

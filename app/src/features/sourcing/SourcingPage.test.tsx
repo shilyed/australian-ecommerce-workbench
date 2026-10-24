@@ -173,7 +173,9 @@ describe("Nike-inspired sourcing workspace", () => {
     expect(html).not.toContain('name="quote"');
     expect(html).not.toContain('name="shopUrl"');
     expect(html).toContain("样品 0 / 100");
-    expect(html).toContain("样品评分不是合规证明");
+    expect(html).toContain("现货不可默认按原创或手工商品上架");
+    expect(html).not.toContain("让每一次采用");
+    expect(html).not.toContain("集中管理货源与规格");
   });
 
   it("restores status, supplier, converted, and search filters from the URL", () => {
@@ -199,7 +201,7 @@ describe("Nike-inspired sourcing workspace", () => {
     expect(render("/sourcing?q=does-not-exist")).toContain("没有找到匹配候选");
     fixture.candidates.length = 0;
     fixture.suppliers.length = 0;
-    expect(render()).toContain("先登记供应商");
+    expect(render()).toContain("请先添加供应商");
     fixture.available = false;
     fixture.error = new Error("读取失败，请稍后重试");
     const html = render();
@@ -221,7 +223,7 @@ describe("Nike-inspired sourcing workspace", () => {
       businessRole: "finance",
     });
     const html = render();
-    expect(html).toContain("当前角色仅可浏览");
+    expect(html).toContain("当前角色只读");
     const buttons = [
       ...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g),
     ].map(match => match[0]);
@@ -255,7 +257,8 @@ describe("sourcing form and mutation compatibility", () => {
     expect(html).toContain('type="url"');
     expect(html).toContain('step="0.01"');
     expect(html).toMatch(/<option(?=[^>]*value="")(?=[^>]*selected="")[^>]*>/);
-    expect(html).toContain("创建候选不会自动采购或上架");
+    expect(html).not.toContain("创建候选不会自动采购或上架");
+    expect(html).not.toContain("同一链接可以保留不同规格");
   });
 
   it("shows save errors and disables fields and actions while pending", () => {
@@ -299,7 +302,7 @@ describe("sourcing form and mutation compatibility", () => {
     expect(convert).toContain('name="skuCode"');
     expect(convert).toContain('value="AU-0007"');
     expect(convert).toContain('name="decisionNote"');
-    expect(convert).toContain("不会自动采购");
+    expect(convert).toContain("不会上架");
   });
 
   it("preserves creation payloads including optional and zero-valued prices", () => {

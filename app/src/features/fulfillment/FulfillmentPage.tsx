@@ -207,11 +207,6 @@ export default function FulfillmentPage({
       <PageHeader
         eyebrow={mode === "shipping" ? "履约 / 包裹交运" : "服务 / 售后处理"}
         title={mode === "shipping" ? "打包发货" : "售后处理"}
-        description={
-          mode === "shipping"
-            ? "核对商品、填写物流，实际交给物流后再确认交运。平台是否更新会单独显示。"
-            : "退款、退货验收和结案分别核对。这里记录处理事实，不会直接向平台执行退款。"
-        }
         actions={
           orderId !== null ? (
             <Button asChild variant="outline">
@@ -234,7 +229,6 @@ export default function FulfillmentPage({
           {mode === "shipping" && (
             <FormSheet
               title="核对商品并创建包裹"
-              description="保存包裹不会确认交运，实际交给物流后需单独核对。"
               open={params.get("panel") === "create-shipment"}
               onOpenChange={open => {
                 if (open) createShipment.reset();
@@ -276,10 +270,6 @@ export default function FulfillmentPage({
                     ))}
                   </select>
                 </label>
-                <p className="text-xs text-muted-foreground">
-                  默认发出全部剩余商品；分包时可调整数量，填 0
-                  表示本包不发。已在草稿包裹中的数量不会重复列入。
-                </p>
                 {selectedOrder?.lines.map(line => {
                   const remaining = shipmentRemainder(selectedOrder, line);
                   return (
@@ -291,7 +281,7 @@ export default function FulfillmentPage({
                         {line.title} · {line.sku?.code}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        本次最多可放入 {remaining} 件
+                        最多 {remaining} 件 · 0 表示不发
                       </span>
                       <Input
                         name={`quantity-${line.id}`}
@@ -363,7 +353,7 @@ export default function FulfillmentPage({
                     createShipment.isPending
                   }
                 >
-                  保存包裹，待交给物流
+                  保存包裹
                 </Button>
               </form>
             </FormSheet>
@@ -372,7 +362,6 @@ export default function FulfillmentPage({
           {mode === "after-sales" && (
             <FormSheet
               title="创建售后事件"
-              description="记录退款、退货或补发事实，不会自动向平台退款。"
               open={params.get("panel") === "create-after-sales"}
               onOpenChange={open => {
                 if (open) createAfterSales.reset();
@@ -467,15 +456,11 @@ export default function FulfillmentPage({
               <div className="ops-panel-header">
                 <div>
                   <h2 className="ops-title">包裹列表</h2>
-                  <p className="ops-subtitle">
-                    一单多包裹、按行部分发货；合计不能超过可发数量
-                  </p>
                 </div>
               </div>
               {packageRows.length === 0 ? (
                 <EmptyPanel
                   title="暂无包裹"
-                  description="从可发货订单核对商品并创建包裹。"
                   action={
                     <Button asChild variant="outline">
                       <Link to="/orders?queue=to_ship">查看待发货订单</Link>
@@ -620,16 +605,10 @@ export default function FulfillmentPage({
               <div className="ops-panel-header">
                 <div>
                   <h2 className="ops-title">售后事件</h2>
-                  <p className="ops-subtitle">
-                    退款执行状态和退货实物状态分别管理；结案不等于已退款
-                  </p>
                 </div>
               </div>
               {caseRows.length === 0 ? (
-                <EmptyPanel
-                  title="暂无售后事件"
-                  description="可从订单发起售后，退款与退货状态分别记录。"
-                />
+                <EmptyPanel title="暂无售后事件" />
               ) : (
                 <div className="table-scroll">
                   <table className="ops-table">
@@ -708,8 +687,8 @@ export default function FulfillmentPage({
             </DialogTitle>
             <DialogDescription>
               {shipmentAction?.kind === "dispatch"
-                ? "仅当包裹已经交给物流时确认。确认后将扣减库存；不会自动证明平台已更新。"
-                : "请先在平台核对实际结果。此处只保存人工核对记录，不会调用平台发货接口。"}
+                ? "确认交运将扣减库存，平台状态需另行核对。"
+                : "仅记录平台核对结果。"}
             </DialogDescription>
             <form
               className="grid gap-3"
@@ -758,7 +737,7 @@ export default function FulfillmentPage({
               核对售后 · {resolutionCase?.order?.orderNo}
             </DialogTitle>
             <DialogDescription>
-              只记录已确认的事实。结案不会自动标记退款成功或退货合格；勾选入库会增加库存。
+              结案不代表退款或退货完成；入库会增加库存。
             </DialogDescription>
             {resolutionCase && (
               <form

@@ -192,9 +192,7 @@ export function DecisionDialog({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>放弃尚未保存的内容？</AlertDialogTitle>
-            <AlertDialogDescription>
-              本次填写的内容不会保存，已有记录不受影响。
-            </AlertDialogDescription>
+            <AlertDialogDescription>未保存内容将丢失。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>继续编辑</AlertDialogCancel>

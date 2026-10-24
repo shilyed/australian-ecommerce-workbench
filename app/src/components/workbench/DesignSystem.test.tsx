@@ -6,8 +6,22 @@ import { DecisionDialog } from "./DecisionDialog";
 import { FormSheet } from "./FormSheet";
 import { EmptyPanel, LoadingPanel } from "./States";
 import { StatusPill } from "./StatusPill";
+import { PageHeader } from "./PageHeader";
 
 describe("shared Nike workbench presentation", () => {
+  it("omits unused descriptions instead of leaving blank helper slots", () => {
+    const header = renderToStaticMarkup(
+      <PageHeader eyebrow="工作台" title="选品" />
+    );
+    expect(header).toContain("<h1");
+    expect(header.match(/<p\b/g)).toHaveLength(1);
+    const empty = renderToStaticMarkup(<EmptyPanel title="暂无订单" />);
+    expect(empty.match(/<p\b/g)).toHaveLength(1);
+    const failure = renderToStaticMarkup(
+      <EmptyPanel title="加载失败" description="网络连接失败" />
+    );
+    expect(failure).toContain("网络连接失败");
+  });
   it("keeps status text while assigning theme-independent semantic roles", () => {
     const approved = renderToStaticMarkup(<StatusPill value="approved" />);
     expect(approved).toContain('data-tone="success"');

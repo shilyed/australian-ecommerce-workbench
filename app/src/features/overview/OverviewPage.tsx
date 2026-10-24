@@ -60,18 +60,16 @@ export default function OverviewPage() {
   const syncIssues = data.stores.filter(
     store => store.authorizationStatus !== "authorized" || store.errorSummary
   );
-  const metrics = [
+  const metrics: { title: string; value: string; detail?: string }[] = [
     {
       title: "今日付款订单",
       value: `${todayOrders.length} 单`,
-      detail: "悉尼日期，不含取消订单",
     },
     {
       title: "今日订单金额 · AUD",
       value: money(
         audOrders.reduce((sum, order) => sum + Number(order.total), 0)
       ),
-      detail: "含运费与代收税，不代表利润",
     },
     {
       title: "已核实贡献利润",
@@ -81,7 +79,7 @@ export default function OverviewPage() {
           : "—",
       detail:
         data.permissions.finance && verified.length
-          ? "仅已核实订单，非净利润或到账"
+          ? undefined
           : "暂无已核实数据",
     },
   ];
@@ -89,25 +87,21 @@ export default function OverviewPage() {
     {
       title: "准备发货",
       count: toShip.length,
-      detail: "已付款且无缺货或商品匹配问题",
       to: "/orders?queue=to_ship",
     },
     {
       title: "解决缺货 / 匹配",
       count: blocked.length,
-      detail: "先处理卡住订单的问题，再继续发货",
       to: "/orders?queue=blocked",
     },
     {
       title: "采购待收货",
       count: receiving.length,
-      detail: "核对到货数量，质检合格后入库",
       to: "/procurement?view=receiving",
     },
     {
       title: "处理售后",
       count: openCases.length,
-      detail: "分别核对退款、退货和补发进展",
       to: "/after-sales",
     },
   ];
@@ -117,7 +111,6 @@ export default function OverviewPage() {
       <PageHeader
         eyebrow="工作台 / 每日经营"
         title="今日经营"
-        description="先看生意，再处理今天的订单。所有日期以悉尼时区展示。"
         actions={
           <Button variant="outline" onClick={() => workspace.refetch()}>
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -130,20 +123,19 @@ export default function OverviewPage() {
           <section key={metric.title} className="ops-panel p-4">
             <p className="ops-label">{metric.title}</p>
             <p className="metric-value mt-3">{metric.value}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {metric.detail}
-            </p>
+            {metric.detail && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {metric.detail}
+              </p>
+            )}
           </section>
         ))}
       </div>
 
       {data.stores.length === 0 && (
         <section className="ops-panel mt-4 p-5">
-          <h2 className="ops-title">从连接店铺开始</h2>
-          <p className="my-3 text-sm text-muted-foreground">
-            连接后可读取店铺概况；订单自动导入能力需单独确认，也可以先手工录入订单。
-          </p>
-          <div className="flex flex-wrap gap-2">
+          <h2 className="ops-title">尚未连接店铺</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
             <Button asChild>
               <Link to="/settings">连接店铺</Link>
             </Button>
@@ -159,7 +151,7 @@ export default function OverviewPage() {
 
       {syncIssues.length > 0 && (
         <section className="ops-panel mt-4 border-amber-500/40 p-4">
-          <h2 className="ops-title">有店铺需要检查连接，订单数据可能不完整</h2>
+          <h2 className="ops-title">店铺连接异常</h2>
           {syncIssues.map(store => (
             <p key={store.id} className="mt-2 text-sm text-muted-foreground">
               {store.shopName}：{store.errorSummary ?? "尚未完成授权"} ·
@@ -184,12 +176,9 @@ export default function OverviewPage() {
               {queue.title}
               <ArrowRight className="float-right h-4 w-4" />
             </p>
-            <div className="mt-3 flex items-center gap-3">
-              <p className="text-2xl font-bold tabular-nums">{queue.count}</p>
-              <p className="text-xs leading-5 text-muted-foreground">
-                {queue.detail}
-              </p>
-            </div>
+            <p className="mt-3 text-2xl font-bold tabular-nums">
+              {queue.count}
+            </p>
           </Link>
         ))}
       </div>
@@ -197,27 +186,21 @@ export default function OverviewPage() {
       <section className="ops-panel mt-4">
         <div className="ops-panel-header">
           <div>
-            <h2 className="ops-title">先处理这些订单</h2>
-            <p className="ops-subtitle">
-              按平台与内部期限中较早的时间排序；点击下一步继续处理
-            </p>
+            <h2 className="ops-title">待处理订单</h2>
           </div>
           <Button asChild variant="ghost">
             <Link to="/orders?queue=all">全部订单</Link>
           </Button>
         </div>
         {urgent.length === 0 ? (
-          <EmptyPanel
-            title="暂无待处理的已付款订单"
-            description="新订单录入后，会按库存和商品匹配情况进入对应队列。"
-          />
+          <EmptyPanel title="暂无待处理的已付款订单" />
         ) : (
           <div className="table-scroll">
             <table className="ops-table">
               <thead>
                 <tr>
                   <th>订单</th>
-                  <th>发货期限</th>
+                  <th>发货期限（悉尼）</th>
                   <th>下一步</th>
                 </tr>
               </thead>

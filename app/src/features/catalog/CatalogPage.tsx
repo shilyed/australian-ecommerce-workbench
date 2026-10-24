@@ -20,7 +20,7 @@ import {
 } from "@/components/workbench/DecisionDialog";
 import { EmptyPanel, LoadingPanel } from "@/components/workbench/States";
 import { StatusPill } from "@/components/workbench/StatusPill";
-import { dateTime, money, percent } from "@/lib/format";
+import { dateTime, money } from "@/lib/format";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { trpc } from "@/providers/trpc";
 
@@ -119,17 +119,12 @@ export default function CatalogPage() {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="商品 / 库存与补货"
-        title="商品与补货"
-        description="先看还能卖多少、订单缺多少、采购在途多少。补货前先检查在途，避免重复采购。"
-      />
+      <PageHeader eyebrow="商品 / 库存与补货" title="商品与补货" />
 
       <div className="grid gap-4">
         <div className="flex flex-wrap items-start gap-2">
           <FormSheet
             title="新建商品 / SKU"
-            description="建立内部商品与唯一 SKU，不会自动创建平台刊登。"
             open={params.get("panel") === "create"}
             onOpenChange={open => {
               if (open) createSku.reset();
@@ -226,7 +221,6 @@ export default function CatalogPage() {
 
           <FormSheet
             title="匹配平台商品与库存商品"
-            description="首次映射或调整需记录原因，历史订单 SKU 快照不会追溯改变。"
             open={params.get("panel") === "mapping"}
             onOpenChange={open => {
               if (open) linkListing.reset();
@@ -243,10 +237,7 @@ export default function CatalogPage() {
           >
             <div className="space-y-3 p-4">
               {data.listings.length === 0 && (
-                <EmptyPanel
-                  title="暂无可映射的平台商品"
-                  description="先连接店铺并读取平台刊登，再将平台商品与内部 SKU 对应。此处不会自动创建或发布商品。"
-                />
+                <EmptyPanel title="暂无可映射的平台商品" />
               )}
               {data.listings.map(listing => (
                 <article
@@ -310,7 +301,7 @@ export default function CatalogPage() {
                         }
                         setDecision({
                           title: "确认平台商品映射",
-                          description: `${listing.title}：首次映射或调整必须记录原因，历史订单 SKU 不追溯改变。`,
+                          description: `${listing.title} · 不追溯历史订单`,
                           fields: [
                             {
                               name: "reason",
@@ -340,9 +331,6 @@ export default function CatalogPage() {
           <div className="ops-panel-header flex-col items-stretch gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="ops-title">库存与补货</h2>
-              <p className="ops-subtitle">
-                在途不等于可售库存；只有收货质检合格后才会增加库存
-              </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative">
@@ -372,10 +360,7 @@ export default function CatalogPage() {
             />
           </div>
           {rows.length === 0 ? (
-            <EmptyPanel
-              title="没有匹配 SKU"
-              description="调整筛选或创建内部 SKU。"
-            />
+            <EmptyPanel title="没有匹配 SKU" />
           ) : (
             <div className="table-scroll">
               <table className="ops-table">
@@ -499,14 +484,6 @@ export default function CatalogPage() {
               </table>
             </div>
           )}
-          <div className="border-t p-4 text-xs leading-6 text-muted-foreground">
-            库存估值覆盖率只统计成本完整批次；缺成本部分单独披露，不按零隐藏。FIFO
-            是管理核算建议，不替代法定会计政策。利润核实覆盖率见成本报表：
-            {percent(
-              data.report.filter(row => row.profitStatus === "verified")
-                .length / Math.max(1, data.report.length)
-            )}
-          </div>
         </section>
       </div>
     </div>

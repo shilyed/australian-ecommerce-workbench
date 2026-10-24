@@ -2,6 +2,7 @@ import {
   type ReactElement,
   type ReactNode,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -39,7 +40,7 @@ export function FormSheet({
   inline = false,
 }: {
   title: string;
-  description: string;
+  description?: string;
   trigger?: ReactElement;
   children: ReactNode;
   open: boolean;
@@ -50,6 +51,7 @@ export function FormSheet({
 }) {
   const dirty = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
+  const descriptionId = useId();
   const [discard, setDiscard] = useState(false);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export function FormSheet({
         <div className="ops-panel-header">
           <div>
             <h2 className="ops-title">{title}</h2>
-            <p className="ops-subtitle">{description}</p>
+            {description && <p className="ops-subtitle">{description}</p>}
           </div>
         </div>
         {children}
@@ -103,6 +105,7 @@ export function FormSheet({
         <SheetContent
           className="workbench-form-sheet"
           showCloseButton={false}
+          aria-describedby={description ? descriptionId : undefined}
           onOpenAutoFocus={() => {
             opener.current =
               document.activeElement instanceof HTMLElement
@@ -118,7 +121,11 @@ export function FormSheet({
         >
           <SheetHeader className="relative border-b p-6 pr-16">
             <SheetTitle className="text-xl leading-7">{title}</SheetTitle>
-            <SheetDescription>{description}</SheetDescription>
+            {description && (
+              <SheetDescription id={descriptionId}>
+                {description}
+              </SheetDescription>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -161,9 +168,7 @@ export function FormSheet({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>放弃尚未保存的内容？</AlertDialogTitle>
-            <AlertDialogDescription>
-              关闭后，本次填写的内容不会保存；已有记录不受影响。
-            </AlertDialogDescription>
+            <AlertDialogDescription>未保存内容将丢失。</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>继续编辑</AlertDialogCancel>

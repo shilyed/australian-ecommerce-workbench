@@ -176,7 +176,6 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="管理 / 店铺与设置"
         title="系统设置"
-        description="管理店铺授权、成员角色、同步任务与审计记录。平台写回默认关闭，启用前必须完成单独联调；开关开启不代表平台已执行成功。"
         actions={
           <Button
             variant="outline"
@@ -199,7 +198,7 @@ export default function SettingsPage() {
 
       {!isAdmin && (
         <div className="ops-panel mb-4 border-amber-500/30 p-4 text-sm leading-6 text-amber-200">
-          当前角色不是管理员：可以查看授权与同步状态，但店铺写回开关和成员角色由服务端拦截，只有管理员可修改。
+          当前角色只读。
         </div>
       )}
 
@@ -210,17 +209,7 @@ export default function SettingsPage() {
               <PlugZap className="h-4 w-4 text-primary" />
               平台官方直连（Etsy / eBay）
             </h2>
-            <p className="ops-subtitle">
-              用平台账号完成 OAuth
-              授权，工作台自动读取店铺名称、在售刊登、订单与额度；令牌加密存储在服务端，前端永远拿不到。
-            </p>
           </div>
-          <Badge
-            variant="outline"
-            className="border-primary/30 bg-primary/10 text-primary"
-          >
-            OAuth 2.0
-          </Badge>
         </div>
         <div className="grid gap-4 p-4 xl:grid-cols-2">
           <StoreIntegrationCard
@@ -268,9 +257,6 @@ export default function SettingsPage() {
                 <KeyRound className="h-4 w-4 text-primary" />
                 手工登记店铺（兜底）
               </h2>
-              <p className="ops-subtitle">
-                没有官方应用凭证时的兜底方案：只登记元数据，不会访问平台接口。优先使用上方的官方直连。
-              </p>
             </div>
           </div>
           <div className="space-y-3 p-4">
@@ -336,8 +322,7 @@ export default function SettingsPage() {
                 登记 / 更新店铺元数据（管理员）
               </p>
               <p className="text-xs leading-5 text-muted-foreground">
-                已通过 OAuth
-                直连的店铺，其授权状态由平台令牌决定，手工表单不会覆盖。
+                手工登记不改变官方授权。
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -428,8 +413,7 @@ export default function SettingsPage() {
                     <option value="system_controlled">系统主控写回</option>
                   </select>
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    P0-B
-                    写回能力需独立验证后启用；写回失败不会回滚真实发货事实，也不会重复扣减库存。
+                    平台写回默认关闭，启用前须完成联调。
                   </p>
                 </div>
               </div>
@@ -451,9 +435,6 @@ export default function SettingsPage() {
                 <Users className="h-4 w-4 text-primary" />
                 成员与角色
               </h2>
-              <p className="ops-subtitle">
-                角色权限在服务端强制执行，前端隐藏按钮只是体验层
-              </p>
             </div>
           </div>
           <div className="space-y-3 p-4">
@@ -763,9 +744,6 @@ export default function SettingsPage() {
                 <KeyRound className="h-4 w-4 text-primary" />
                 同步任务
               </h2>
-              <p className="ops-subtitle">
-                只有已授权店铺才能创建读取任务；失败任务保留错误摘要，可排队重试
-              </p>
             </div>
           </div>
           <div className="space-y-3 p-4">
@@ -865,9 +843,6 @@ export default function SettingsPage() {
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 审计日志
               </h2>
-              <p className="ops-subtitle">
-                高风险操作全部留痕：操作者、动作、对象、前后值与原因
-              </p>
             </div>
           </div>
           <div className="table-shell m-4 mt-0">
@@ -911,9 +886,6 @@ export default function SettingsPage() {
               </p>
             )}
           </div>
-          <div className="border-t border-border/60 p-4 text-xs leading-5 text-muted-foreground">
-            数据边界：买家地址仅在订单与履约流程内按权限展示；附件经服务端私有存储访问；令牌与凭证不会进入前端或审计日志；新西兰等非澳洲目的地的订单会被标记为超范围并阻断常规发货。
-          </div>
         </section>
 
         <section
@@ -930,9 +902,6 @@ export default function SettingsPage() {
                 )}
                 外观与可读性
               </h2>
-              <p className="ops-subtitle">
-                默认跟随系统；选择会保存在本机，并在下次打开时于首屏渲染前生效
-              </p>
             </div>
             <Badge variant="outline" className="text-muted-foreground">
               当前：{resolvedTheme === "dark" ? "夜间" : "日间"}
@@ -958,10 +927,6 @@ export default function SettingsPage() {
                 {option.title}
               </Button>
             ))}
-          </div>
-          <div className="border-t border-border/60 p-4 text-xs leading-5 text-muted-foreground">
-            全站采用统一的黑白灰、平面化内容与胶囊按钮。日间与夜间模式保留独立的
-            文字、边界和状态语义颜色；外观选择不会影响业务数据或平台操作权限。
           </div>
         </section>
       </div>

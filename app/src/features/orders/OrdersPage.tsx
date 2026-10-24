@@ -182,7 +182,6 @@ export default function OrdersPage() {
       <PageHeader
         eyebrow="交易 / 订单队列"
         title="订单处理"
-        description="先处理待发货和卡住的订单。每笔订单都有明确的下一步，筛选条件会保留在链接中。"
         actions={
           <Button onClick={() => updateParam("import", "1")}>
             <FilePlus2 className="mr-2 h-4 w-4" />
@@ -221,9 +220,7 @@ export default function OrdersPage() {
         >
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
             <DialogTitle>手工录入订单</DialogTitle>
-            <DialogDescription>
-              选择实际店铺，填写平台订单信息。重复订单不会重复预留库存；此操作不会向平台创建订单。
-            </DialogDescription>
+            <DialogDescription>本地记录 · AUD</DialogDescription>
             <form onSubmit={submitOrder} className="grid gap-3 p-4">
               <label className="grid gap-1">
                 <span className="ops-label">订单所属店铺</span>
@@ -250,9 +247,6 @@ export default function OrdersPage() {
                   请先登记或连接店铺，再录入订单
                 </Link>
               )}
-              <p className="text-xs text-muted-foreground">
-                此手工录入表单使用 AUD 金额，请先核对原订单币种。
-              </p>
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-1">
                   <span className="ops-label">外部订单 ID</span>
@@ -415,9 +409,6 @@ export default function OrdersPage() {
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title">订单列表</h2>
-              <p className="ops-subtitle">
-                先看下一步；展开状态可查看付款、履约和售后记录
-              </p>
             </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -431,10 +422,7 @@ export default function OrdersPage() {
             </div>
           </div>
           {rows.length === 0 ? (
-            <EmptyPanel
-              title="没有匹配订单"
-              description="可通过官方授权读取或使用应急手工导入。"
-            />
+            <EmptyPanel title="没有匹配订单" />
           ) : (
             <div className="table-scroll">
               <table className="ops-table">
@@ -672,7 +660,11 @@ export default function OrdersPage() {
           if (!open) setOperation(null);
         }}
       >
-        <DialogContent>
+        <DialogContent
+          aria-describedby={
+            operation?.kind === "cancel" ? "order-cancel-risk" : undefined
+          }
+        >
           <DialogTitle>
             {operation?.kind === "match"
               ? "匹配订单商品"
@@ -683,11 +675,11 @@ export default function OrdersPage() {
                   : "添加内部备注"}{" "}
             · {operationOrder?.orderNo}
           </DialogTitle>
-          <DialogDescription>
-            {operation?.kind === "cancel"
-              ? "仅取消本地处理并释放预留库存，不会向平台取消订单或执行退款。请填写原因。"
-              : "操作记录会保存到这笔订单，不会发送给买家。"}
-          </DialogDescription>
+          {operation?.kind === "cancel" && (
+            <DialogDescription id="order-cancel-risk">
+              仅取消本地订单并释放预留库存，平台取消和退款需另行处理。
+            </DialogDescription>
+          )}
           <form
             key={`${operation?.orderId}-${operation?.kind}`}
             className="grid gap-3"

@@ -75,9 +75,6 @@ export default function AuthLayout({
             <h1 className="text-2xl font-semibold tracking-tight text-center">
               登录中澳跨境电商工作台
             </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              使用工作台邮箱账号进入内部运营闭环。订单、库存、成本和审计数据保存在服务端数据库。
-            </p>
           </div>
           <Button
             onClick={() => {

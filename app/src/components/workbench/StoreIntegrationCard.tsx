@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Link2,
   Loader2,
-  PlugZap,
   RefreshCw,
   Store,
   Unplug,
@@ -64,12 +63,10 @@ const PLATFORM_META = {
   etsy: {
     name: "Etsy",
     accent: "bg-secondary text-foreground border-border",
-    hint: "Etsy Open API v3 · OAuth 2.0 + PKCE",
   },
   ebay: {
     name: "eBay",
     accent: "bg-secondary text-foreground border-border",
-    hint: "eBay REST API · OAuth 2.0 授权码",
   },
 } as const;
 
@@ -136,7 +133,6 @@ export function StoreIntegrationCard({
               </Badge>
             )}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">{meta.hint}</p>
         </div>
         {providerLoading ? (
           <Badge variant="outline" className="text-muted-foreground">
@@ -174,9 +170,6 @@ export function StoreIntegrationCard({
       <div className="flex-1 space-y-3 p-4">
         {!providerLoading && !provider?.configured && (
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-5 text-amber-700 dark:text-amber-200">
-            <p className="font-semibold">
-              还差一步：在服务端环境变量中补全应用凭证
-            </p>
             <p className="mt-1">
               缺少：
               <span className="font-mono">
@@ -184,8 +177,6 @@ export function StoreIntegrationCard({
               </span>
             </p>
             <p className="mt-1">
-              配置后重启服务即可在此直接登录 {meta.name} 授权，无需手工填写店铺
-              ID。{" "}
               <a
                 className="underline underline-offset-2"
                 href={provider?.docsUrl}
@@ -203,9 +194,6 @@ export function StoreIntegrationCard({
             <Store className="mx-auto h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">
               还没有登记 {meta.name} 店铺。
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              完成官方授权后，店铺名称、刊登数、订单数与销售额度会自动同步到这里。
             </p>
           </div>
         )}
@@ -339,10 +327,7 @@ export function StoreIntegrationCard({
               </>
             ) : (
               <p className="mt-3 rounded-md border border-dashed border-border p-2 text-xs leading-5 text-muted-foreground">
-                暂无实时店铺数据。
-                {store.hasCredentials
-                  ? "点击右侧“刷新数据”从平台重新读取。"
-                  : "完成官方授权后可读取店铺名称、刊登与订单数据。"}
+                暂无店铺数据。
               </p>
             )}
 
@@ -353,10 +338,11 @@ export function StoreIntegrationCard({
             )}
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-[11px] text-muted-foreground">
-                最近尝试：
-                {store.lastAttemptAt ? dateTime(store.lastAttemptAt) : "—"}
-              </span>
+              {store.lastAttemptAt && (
+                <span className="text-xs text-muted-foreground">
+                  最近尝试：{dateTime(store.lastAttemptAt)}
+                </span>
+              )}
               {isAdmin && store.hasCredentials && (
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -397,21 +383,6 @@ export function StoreIntegrationCard({
           </div>
         ))}
       </div>
-
-      <footer className="border-t border-border/60 px-4 py-3 text-[11px] leading-5 text-muted-foreground">
-        <p className="flex items-center gap-1">
-          <PlugZap className="h-3 w-3" />
-          回调地址：
-          <span className="break-all font-mono">
-            {provider?.redirectUri ?? "未配置"}
-          </span>
-        </p>
-        {provider?.notes.map(note => (
-          <p key={note} className="mt-1">
-            · {note}
-          </p>
-        ))}
-      </footer>
     </article>
   );
 }

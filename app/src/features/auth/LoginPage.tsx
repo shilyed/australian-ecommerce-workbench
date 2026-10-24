@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
-import { LoaderCircle, LockKeyhole, ShieldCheck } from "lucide-react";
+import { LoaderCircle, LockKeyhole } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -88,19 +88,6 @@ export default function LoginPage() {
                 <br />
                 电商工作台
               </h2>
-              <p className="mt-5 max-w-sm text-sm leading-7 opacity-80">
-                从选品、采购到订单交付，集中处理经营事务，保留每一步业务记录。
-              </p>
-            </div>
-            <div className="space-y-4 border-t border-primary-foreground/20 pt-6 text-sm">
-              <p className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 shrink-0" />
-                数据保存在你自己的服务器
-              </p>
-              <p className="flex items-center gap-3">
-                <LockKeyhole className="h-5 w-5 shrink-0" />
-                邮箱密码登录，成员按角色分工
-              </p>
             </div>
           </div>
 
@@ -112,11 +99,7 @@ export default function LoginPage() {
               <CardTitle className="text-[28px] font-bold">
                 <h1>{needsSetup ? "创建管理员账号" : "登录工作台"}</h1>
               </CardTitle>
-              <CardDescription>
-                {needsSetup
-                  ? "这是首次启动。创建后即可进入系统，之后不再开放初始化。"
-                  : "中澳跨境电商工作台"}
-              </CardDescription>
+              <CardDescription>中澳跨境电商工作台</CardDescription>
             </CardHeader>
             <CardContent>
               {setupStatus.isLoading ? (
@@ -249,7 +232,7 @@ export default function LoginPage() {
                     {pending ? "正在登录…" : "登录"}
                   </Button>
                   <p className="text-center text-xs leading-5 text-muted-foreground">
-                    忘记密码请联系管理员重置。连续输错 5 次会暂时锁定账号。
+                    忘记密码请联系管理员。
                   </p>
                 </form>
               )}

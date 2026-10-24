@@ -211,7 +211,6 @@ export default function PurchasingPage() {
       <PageHeader
         eyebrow="供应链 / 采购与收货"
         title="采购与收货"
-        description="缺货商品可直接带入采购。记录付款不会增加库存，到货后核对数量并完成质检。"
         actions={
           <Button asChild variant="outline">
             <Link to="/inventory?risk=shortage">查看缺货商品</Link>
@@ -224,8 +223,7 @@ export default function PurchasingPage() {
             为 {restockSku.name} · {restockSku.code} 补货
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            已带入商品与未被在途覆盖的缺口数量，请确认采购量、供应商和单价。当前在途{" "}
-            {incoming} 件，避免重复采购。
+            采购在途：{incoming} 件
           </p>
         </section>
       )}
@@ -248,7 +246,6 @@ export default function PurchasingPage() {
         <div className="flex flex-wrap items-start gap-2">
           <FormSheet
             title="创建采购单"
-            description="付款与库存分开记录，只有收货质检合格后才增加可售库存。"
             open={params.get("panel") === "create"}
             onOpenChange={open => {
               if (open) createPo.reset();
@@ -390,7 +387,6 @@ export default function PurchasingPage() {
 
           <FormSheet
             title="付款 / 供应商退款"
-            description="记录现金事实，不代表真实支付，也不会增加库存。"
             open={params.get("panel") === "payment"}
             onOpenChange={open => {
               if (open) addPayment.reset();
@@ -473,14 +469,13 @@ export default function PurchasingPage() {
                 variant="secondary"
                 disabled={addPayment.isPending || !selectedPo}
               >
-                记录现金事实
+                保存收支记录
               </Button>
             </form>
           </FormSheet>
 
           <FormSheet
             title="分批到货与质检"
-            description="按实际到货与质检结果过账，只有合格品增加可售库存。"
             open={params.get("panel") === "receipt"}
             onOpenChange={open => {
               if (open) postReceipt.reset();
@@ -534,8 +529,7 @@ export default function PurchasingPage() {
                 />
               </label>
               <p className="text-xs text-muted-foreground">
-                该明细未收 {unreceivedQty}{" "}
-                件。实收已预填未收数量，请按实际到货与质检结果修改。
+                未收：{unreceivedQty} 件
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-1">
@@ -550,7 +544,7 @@ export default function PurchasingPage() {
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="ops-label">合格</span>
+                  <span className="ops-label">合格（入库）</span>
                   <Input
                     required
                     name="qualifiedQty"
@@ -597,19 +591,13 @@ export default function PurchasingPage() {
               >
                 确认收货与质检
               </Button>
-              <p className="text-xs leading-5 text-muted-foreground">
-                系统强制：实收 = 合格 + 残次 + 待检；仅合格品增加可售库存。
-              </p>
             </form>
           </FormSheet>
         </div>
 
         <section className="space-y-4 min-w-0">
           {visiblePurchases.length === 0 ? (
-            <EmptyPanel
-              title="暂无符合条件的采购单"
-              description="先创建供应商和商品，再创建采购；已有采购可切换到全部查看。"
-            />
+            <EmptyPanel title="暂无符合条件的采购单" />
           ) : (
             visiblePurchases.map(po => {
               const ordered = po.lines.reduce(
@@ -819,7 +807,7 @@ export default function PurchasingPage() {
                         onClick={() => {
                           setDecision({
                             title: "关闭剩余未交数量",
-                            description: `${po.internalNo}：保留原订购量与关闭量，填写原因后确认。`,
+                            description: po.internalNo,
                             fields: [
                               {
                                 name: "reason",

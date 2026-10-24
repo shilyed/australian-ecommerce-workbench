@@ -26,7 +26,7 @@ export function EmptyPanel({
   action,
 }: {
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
 }) {
   return (
@@ -35,9 +35,11 @@ export function EmptyPanel({
       className="flex min-h-40 flex-col items-center justify-center bg-secondary/35 px-6 py-8 text-center"
     >
       <p className="text-base font-semibold text-foreground">{title}</p>
-      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
+      {description && (
+        <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+      )}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );

@@ -4,7 +4,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import EbayListingPage from "./EbayListingPage";
-import { draftFromForm, formFromDraft, missingRequiredAspects, readinessIssues } from "./ebay-form";
+import {
+  draftFromForm,
+  formFromDraft,
+  missingRequiredAspects,
+  readinessIssues,
+} from "./ebay-form";
 
 const fixture = vi.hoisted(() => {
   const user: Pick<User, "role" | "businessRole" | "status"> = {
@@ -13,7 +18,10 @@ const fixture = vi.hoisted(() => {
     status: "active",
   };
   const options: MarketplaceOptions & { missingScopes: string[] } = {
-    fulfillmentPolicies: { items: [{ id: "f1", name: "标准运费" }], error: null },
+    fulfillmentPolicies: {
+      items: [{ id: "f1", name: "标准运费" }],
+      error: null,
+    },
     paymentPolicies: { items: [{ id: "p1", name: "在线付款" }], error: null },
     returnPolicies: { items: [{ id: "r1", name: "30 天退货" }], error: null },
     locations: { items: [{ id: "warehouse", name: "澳洲仓库" }], error: null },
@@ -48,7 +56,10 @@ const fixture = vi.hoisted(() => {
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: fixture.user }) }));
 vi.mock("@/providers/trpc", () => {
   const action = (name: string) => ({
-    useMutation: () => ({ mutate: vi.fn(), isPending: fixture.pending === name }),
+    useMutation: () => ({
+      mutate: vi.fn(),
+      isPending: fixture.pending === name,
+    }),
   });
   return {
     trpc: {
@@ -119,21 +130,30 @@ function render(url = "/products/4/marketplaces/ebay") {
   return renderToStaticMarkup(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
-        <Route path="/products/:skuId/marketplaces/ebay" element={<EbayListingPage />} />
+        <Route
+          path="/products/:skuId/marketplaces/ebay"
+          element={<EbayListingPage />}
+        />
       </Routes>
     </MemoryRouter>
   );
 }
 
 function expectButton(html: string, label: string, enabled: boolean) {
-  const button = html.match(new RegExp(`<button\\b[^>]*>${label}</button>`))?.[0];
+  const button = html.match(
+    new RegExp(`<button\\b[^>]*>${label}</button>`)
+  )?.[0];
   expect(button, label).toBeDefined();
   expect(button?.includes('disabled=""'), label).toBe(!enabled);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(fixture.user, { role: "admin", businessRole: "admin", status: "active" });
+  Object.assign(fixture.user, {
+    role: "admin",
+    businessRole: "admin",
+    status: "active",
+  });
   fixture.pending = "";
   Object.assign(listing, {
     status: "ready",
@@ -156,7 +176,10 @@ beforeEach(() => {
     },
   ];
   fixture.options.aspects.error = null;
-  fixture.options.fulfillmentPolicies = { items: [{ id: "f1", name: "标准运费" }], error: null };
+  fixture.options.fulfillmentPolicies = {
+    items: [{ id: "f1", name: "标准运费" }],
+    error: null,
+  };
   fixture.listQuery.mockReturnValue({
     data: { listings: [listing] },
     isLoading: false,
@@ -178,6 +201,11 @@ beforeEach(() => {
 });
 
 describe("eBay listing page", () => {
+  it("removes generic tutorials but retains the live-listing update warning", () => {
+    expect(render()).not.toContain("管理员和运营可编辑、保存草稿");
+    listing.status = "published";
+    expect(render()).toContain("更新会立即修改在售商品");
+  });
   it("loads the SKU listing before fetching its detail and renders every listing field", () => {
     const html = render();
     expect(fixture.listQuery).toHaveBeenCalledWith(
@@ -207,7 +235,14 @@ describe("eBay listing page", () => {
       "packageHeightCm",
     ])
       expect(html).toContain(`name="${name}"`);
-    for (const label of ["运费政策", "付款政策", "退货政策", "发货地点", "类目必填属性", "Brand"])
+    for (const label of [
+      "运费政策",
+      "付款政策",
+      "退货政策",
+      "发货地点",
+      "类目必填属性",
+      "Brand",
+    ])
       expect(html).toContain(label);
     expect(html).toContain('maxLength="80"');
     expect(html).toContain(" / 80 字符");
@@ -282,7 +317,9 @@ describe("eBay listing page", () => {
 
   it("explains missing scopes and retains local draft access", () => {
     detail.canWriteToPlatform = false;
-    fixture.options.missingScopes = ["https://api.ebay.com/oauth/api_scope/sell.inventory"];
+    fixture.options.missingScopes = [
+      "https://api.ebay.com/oauth/api_scope/sell.inventory",
+    ];
     const html = render();
     expect(html).toContain("设置 → 店铺连接");
     expect(html).toContain("重新授权 eBay");
@@ -293,7 +330,10 @@ describe("eBay listing page", () => {
   });
 
   it("surfaces partial option failures without losing an already saved policy", () => {
-    fixture.options.fulfillmentPolicies = { items: [], error: "读取运费政策失败（HTTP 403）" };
+    fixture.options.fulfillmentPolicies = {
+      items: [],
+      error: "读取运费政策失败（HTTP 403）",
+    };
     const html = render();
     expect(html).toContain("读取运费政策失败（HTTP 403）");
     expect(html).toContain("已保存：f1（当前列表未返回）");
@@ -397,14 +437,20 @@ describe("reused eBay form conversions", () => {
 
   it("splits image lines and aspect values and reports missing required aspects", () => {
     const form = formFromDraft(payload);
-    form.imageUrls = "https://example.com/a.jpg\r\n \nhttps://example.com/b.jpg";
+    form.imageUrls =
+      "https://example.com/a.jpg\r\n \nhttps://example.com/b.jpg";
     form.aspects = [
       { name: " Material ", values: "Steel; Plastic； " },
       { name: "", values: "" },
     ];
     const draft = draftFromForm(form);
-    expect(draft.imageUrls).toEqual(["https://example.com/a.jpg", "https://example.com/b.jpg"]);
+    expect(draft.imageUrls).toEqual([
+      "https://example.com/a.jpg",
+      "https://example.com/b.jpg",
+    ]);
     expect(draft.aspects).toEqual({ Material: ["Steel", "Plastic"] });
-    expect(missingRequiredAspects(draft, ["material", "Brand"])).toEqual(["Brand"]);
+    expect(missingRequiredAspects(draft, ["material", "Brand"])).toEqual([
+      "Brand",
+    ]);
   });
 });

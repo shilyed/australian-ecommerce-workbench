@@ -71,7 +71,6 @@ export default function ProductDetailPage() {
       <PageHeader
         eyebrow={`主商品 · ${sku.code}`}
         title={sku.productName || sku.name}
-        description="左侧是主商品资料（所有市场共用）。右侧每个市场有独立详情：在详情页编辑后只保存在工作台，需要人工点击“更新到平台”和“发布”才会改动线上。"
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
@@ -79,9 +78,6 @@ export default function ProductDetailPage() {
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title">主商品资料</h2>
-              <p className="ops-subtitle">
-                在库存页维护；创建市场详情时会自动带入
-              </p>
             </div>
             <StatusPill value={sku.status} />
           </div>
@@ -111,7 +107,6 @@ export default function ProductDetailPage() {
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title">市场详情</h2>
-              <p className="ops-subtitle">Information in marketplaces</p>
             </div>
           </div>
           <div className="grid gap-3 p-4">
