@@ -300,3 +300,459 @@ html.light .text-fuchsia-200 {
 html.light [data-sidebar="sidebar"] {
   box-shadow: 0 0 0 1px hsl(var(--sidebar-border)), 0 10px 30px rgba(15, 23, 42, 0.04);
 }
+
+/* Opt-in route and portal theme; other workspaces retain their existing design. */
+.nike-workspace {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 6.7%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 6.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 6.7%;
+  --primary: 0 0% 6.7%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 6.7%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 240 0.9% 44.3%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 6.7%;
+  --destructive: 358.6 100% 41.4%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 89.8%;
+  --input: 240 0.9% 44.3%;
+  --ring: 0 0% 6.7%;
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 240 0.9% 44.3%;
+  --sidebar-primary: 0 0% 6.7%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 96.1%;
+  --sidebar-accent-foreground: 0 0% 6.7%;
+  --sidebar-border: 0 0% 89.8%;
+  --sidebar-ring: 0 0% 6.7%;
+  --sourcing-success: 154.6 100% 24.5%;
+  --sourcing-warning: 32.6 100% 27.1%;
+  --sourcing-info: 223.9 100% 53.3%;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  color-scheme: light;
+  font-family: "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: normal;
+}
+
+html.dark .nike-workspace {
+  --background: 0 0% 6.7%;
+  --foreground: 0 0% 96.1%;
+  --card: 0 0% 9.4%;
+  --card-foreground: 0 0% 96.1%;
+  --popover: 0 0% 9.4%;
+  --popover-foreground: 0 0% 96.1%;
+  --primary: 0 0% 96.1%;
+  --primary-foreground: 0 0% 6.7%;
+  --secondary: 0 0% 14.1%;
+  --secondary-foreground: 0 0% 96.1%;
+  --muted: 0 0% 14.1%;
+  --muted-foreground: 240 1.3% 70.6%;
+  --accent: 0 0% 14.1%;
+  --accent-foreground: 0 0% 96.1%;
+  --destructive: 358.5 100% 77.1%;
+  --destructive-foreground: 0 0% 6.7%;
+  --border: 240 1.8% 22.7%;
+  --input: 240 1% 62.4%;
+  --ring: 0 0% 96.1%;
+  --sidebar-background: 0 0% 6.7%;
+  --sidebar-foreground: 240 1.3% 70.6%;
+  --sidebar-primary: 0 0% 96.1%;
+  --sidebar-primary-foreground: 0 0% 6.7%;
+  --sidebar-accent: 0 0% 14.1%;
+  --sidebar-accent-foreground: 0 0% 96.1%;
+  --sidebar-border: 240 1.8% 22.7%;
+  --sidebar-ring: 0 0% 96.1%;
+  --sourcing-success: 156.2 71.6% 66.9%;
+  --sourcing-warning: 37.2 87.3% 69.2%;
+  --sourcing-info: 222 100% 80.4%;
+  color-scheme: dark;
+}
+
+html .nike-workspace [data-sidebar="sidebar"],
+html [data-sidebar="sidebar"].nike-workspace {
+  border-right: 1px solid hsl(var(--sidebar-border));
+  box-shadow: none;
+}
+
+.nike-workspace [data-sidebar="menu-button"] {
+  min-height: 44px;
+  border-radius: 9999px;
+}
+
+.nike-workspace [data-sidebar="menu-button"][data-active="true"] {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.nike-workspace .nike-button {
+  min-height: 44px;
+  height: auto;
+  border-radius: 9999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: normal;
+  box-shadow: none;
+}
+
+.nike-workspace .nike-icon-button {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+
+.nike-workspace [data-slot="button"][data-size="icon"],
+.nike-workspace [data-sidebar="trigger"],
+.nike-workspace [aria-label="Toggle navigation"] {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.sourcing-page,
+.sourcing-content {
+  container-type: inline-size;
+}
+
+.sourcing-page-heading .ops-label {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.sourcing-page-heading h1 {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+  letter-spacing: normal;
+}
+
+.sourcing-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 16px 0 20px;
+  padding: 16px 0;
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.sourcing-summary > div {
+  min-width: 0;
+  padding: 0 20px;
+  border-right: 1px solid hsl(var(--border));
+}
+
+.sourcing-summary > div:first-child { padding-left: 0; }
+.sourcing-summary > div:last-child { border-right: 0; padding-right: 0; }
+.sourcing-summary dt,
+.sourcing-summary p {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.sourcing-summary-value {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 8px 0 4px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.sourcing-content .sourcing-tabs {
+  display: flex;
+  width: 100%;
+  height: 56px;
+  justify-content: flex-start;
+  gap: 28px;
+  border-bottom: 1px solid hsl(var(--border));
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.sourcing-tabs [role="tab"] {
+  height: 56px;
+  flex: initial;
+  gap: 8px;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0 2px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.sourcing-tabs [role="tab"][data-state="active"],
+html.dark .sourcing-tabs [role="tab"][data-state="active"] {
+  border-bottom-color: hsl(var(--foreground));
+  background: transparent;
+  color: hsl(var(--foreground));
+  box-shadow: none;
+}
+
+.sourcing-tabs [role="tab"] > span {
+  min-width: 24px;
+  border-radius: 9999px;
+  padding: 1px 7px;
+  background: hsl(var(--secondary));
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sourcing-tabs [role="tab"][data-state="active"] > span {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.sourcing-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+}
+
+.nike-workspace .sourcing-search {
+  height: 44px;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding-left: 44px;
+  padding-right: 16px;
+  background: hsl(var(--secondary));
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.nike-workspace .sourcing-status-filter[data-slot="select-trigger"] {
+  width: 164px;
+  height: 44px;
+  flex-shrink: 0;
+  border-color: hsl(var(--input));
+  border-radius: 9999px;
+  padding: 0 16px;
+  background: hsl(var(--background));
+  box-shadow: none;
+}
+
+.nike-workspace .sourcing-input,
+.nike-workspace .sourcing-textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid hsl(var(--input));
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  line-height: 22px;
+  box-shadow: none;
+}
+
+.sourcing-list-heading,
+.sourcing-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(86px, 0.7fr) minmax(128px, 0.9fr) minmax(90px, 0.7fr) 64px;
+  align-items: center;
+  gap: 16px;
+}
+
+.sourcing-list-heading {
+  border-block: 1px solid hsl(var(--border));
+  padding: 14px 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+.sourcing-row {
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 20px 0;
+}
+
+.sourcing-row:hover { background: hsl(var(--secondary) / 0.55); }
+.sourcing-product { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
+.sourcing-product-title {
+  display: -webkit-box;
+  width: 100%;
+  min-height: 44px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.sourcing-product-title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sourcing-index {
+  display: flex;
+  width: 40px;
+  height: 48px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sourcing-source-link {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 4px;
+  color: hsl(var(--foreground));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sourcing-source-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sourcing-product-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.sourcing-quote { text-align: right; font-size: 14px; }
+.sourcing-channels { display: grid; gap: 8px; }
+.sourcing-channels > div { display: flex; align-items: center; gap: 8px; }
+.sourcing-channels > div > span:first-child { width: 30px; flex-shrink: 0; color: hsl(var(--muted-foreground)); font-size: 12px; }
+.sourcing-cell-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.nike-workspace .sourcing-row-action { justify-self: end; padding-inline: 10px; }
+.sourcing-supplier-row { grid-template-columns: minmax(0, 1fr) 180px 64px; }
+.nike-workspace .sourcing-status {
+  min-height: 24px;
+  gap: 5px;
+  border-color: hsl(var(--border));
+  padding: 2px 8px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.nike-workspace .sourcing-status .status-dot { width: 4px; height: 4px; box-shadow: none; }
+.nike-workspace .sourcing-status[data-status="approved"],
+.nike-workspace .sourcing-status[data-status="adopted"] {
+  border-color: hsl(var(--sourcing-success) / 0.2);
+  background: hsl(var(--sourcing-success) / 0.08);
+  color: hsl(var(--sourcing-success));
+}
+
+.nike-workspace .sourcing-status[data-status="pending"],
+.nike-workspace .sourcing-status[data-status="assess"],
+.nike-workspace .sourcing-status[data-status="pending_decision"] {
+  border-color: hsl(var(--sourcing-warning) / 0.2);
+  background: hsl(var(--sourcing-warning) / 0.08);
+  color: hsl(var(--sourcing-warning));
+}
+
+.nike-workspace .sourcing-status[data-status="sample_evaluation"] {
+  border-color: hsl(var(--sourcing-info) / 0.2);
+  background: hsl(var(--sourcing-info) / 0.08);
+  color: hsl(var(--sourcing-info));
+}
+
+.nike-workspace .sourcing-status[data-status="rejected"] {
+  border-color: hsl(var(--destructive) / 0.2);
+  background: hsl(var(--destructive) / 0.08);
+  color: hsl(var(--destructive));
+}
+
+.sourcing-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-left: 2px solid hsl(var(--sourcing-warning));
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.sourcing-notice > svg,
+.sourcing-warning-text { color: hsl(var(--sourcing-warning)); }
+.sourcing-error {
+  border: 1px solid hsl(var(--destructive) / 0.25);
+  border-radius: 8px;
+  padding: 12px;
+  background: hsl(var(--destructive) / 0.06);
+  color: hsl(var(--destructive));
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sourcing-empty > div { min-height: 220px; border-radius: 0; border-style: solid; background: hsl(var(--secondary) / 0.5); }
+.nike-workspace.sourcing-sheet { width: min(100vw, 600px); max-width: none; height: 100dvh; gap: 0; }
+.nike-workspace.sourcing-operation {
+  display: flex;
+  width: min(calc(100vw - 24px), 560px);
+  max-width: none;
+  max-height: 90dvh;
+  min-height: 300px;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 0;
+}
+
+@container (min-width: 600px) {
+  .sourcing-page-heading > div { flex-direction: row; align-items: flex-end; gap: 16px; }
+  .sourcing-page-heading > div > div:first-child { min-width: 0; flex: 1; }
+  .sourcing-page-heading > div > div:last-child { flex-shrink: 0; }
+}
+
+@container (max-width: 760px) {
+  .sourcing-summary dd > span { display: none; }
+  .sourcing-list-heading { display: none; }
+  .sourcing-row { grid-template-columns: minmax(0, 1fr) auto; gap: 16px; }
+  .sourcing-product { grid-column: 1 / -1; }
+  .sourcing-stage { grid-column: 1; grid-row: 2; }
+  .sourcing-quote { grid-column: 2; grid-row: 2; }
+  .sourcing-channels { grid-column: 1; grid-row: 3; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  .nike-workspace .sourcing-row-action { grid-column: 2; grid-row: 3; align-self: end; }
+  .sourcing-supplier-row > div:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .sourcing-supplier-row .sourcing-row-action { grid-row: 2; }
+  .sourcing-source-link { min-height: 44px; }
+  .sourcing-quote .sourcing-cell-label {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    margin: 0 0 6px;
+    overflow: visible;
+    clip: auto;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+@container (max-width: 480px) {
+  .sourcing-summary > div { padding-inline: 10px; }
+  .sourcing-summary > div:first-child { padding-left: 0; }
+  .sourcing-summary > div:last-child { padding-right: 0; }
+  .nike-workspace .sourcing-status-filter[data-slot="select-trigger"] { width: 144px; padding-inline: 12px; }
+}
+
+@media (max-width: 767px) {
+  .nike-workspace .sourcing-source-link { min-height: 44px; }
+}

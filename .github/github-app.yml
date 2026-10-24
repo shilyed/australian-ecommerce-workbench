@@ -1,0 +1,8 @@
+instructions: |
+  Before creating or changing frontend UI in app/src, read the root DESIGN.md.
+  Follow its Nike-inspired workbench rules for new or intentionally redesigned
+  UI, reusing the existing React, Tailwind, and shadcn/Radix components.
+  Do not expand a functional fix into an unrelated visual redesign.
+  The design reference does not authorize changes to backend behavior, data
+  contracts, permissions, workflow transitions, marketplace writes, or deployment.
+  Do not use Nike logos, campaign assets, or unlicensed proprietary fonts.

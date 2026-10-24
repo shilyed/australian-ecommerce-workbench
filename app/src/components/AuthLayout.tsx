@@ -35,13 +35,20 @@ import {
 import { useLocation, useNavigate } from "react-router";
 import { AuthLayoutSkeleton } from "./AuthLayoutSkeleton";
 import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default function AuthLayout({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
@@ -84,13 +91,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider
+      className={className}
       style={
         {
           "--sidebar-width": `${sidebarWidth}px`,
         } as CSSProperties
       }
     >
-      <AuthLayoutContent setSidebarWidth={setSidebarWidth}>
+      <AuthLayoutContent className={className} setSidebarWidth={setSidebarWidth}>
         {children}
       </AuthLayoutContent>
     </SidebarProvider>
@@ -100,11 +108,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 type AuthLayoutContentProps = {
   children: ReactNode;
   setSidebarWidth: (width: number) => void;
+  className?: string;
 };
 
 function AuthLayoutContent({
   children,
   setSidebarWidth,
+  className,
 }: AuthLayoutContentProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -158,7 +168,7 @@ function AuthLayoutContent({
   return (
     <>
       <div className="relative" ref={sidebarRef}>
-        <Sidebar collapsible="icon" className="border-r-0">
+        <Sidebar collapsible="icon" className={cn("border-r-0", className)}>
           <SidebarHeader className="h-16 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button

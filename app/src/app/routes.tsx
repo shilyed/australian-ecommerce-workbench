@@ -96,7 +96,7 @@ export function AppRoutes() {
         <Route
           path="/sourcing"
           element={
-            <AuthLayout>
+            <AuthLayout className="nike-workspace">
               <SourcingPage />
             </AuthLayout>
           }

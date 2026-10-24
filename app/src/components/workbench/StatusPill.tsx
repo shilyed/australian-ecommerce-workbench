@@ -37,12 +37,12 @@ const toneByValue: Record<string, string> = {
   out_of_scope: "text-fuchsia-200 bg-fuchsia-400/10 border-fuchsia-300/30",
 };
 
-export function StatusPill({ value, className }: { value: string | null | undefined; className?: string }) {
+export function StatusPill({ value, className, text }: { value: string | null | undefined; className?: string; text?: string }) {
   const tone = toneByValue[value ?? ""] ?? "text-slate-300 bg-slate-400/10 border-slate-300/20";
   return (
-    <span className={cn("inline-flex min-h-7 items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium", tone, className)}>
+    <span data-status={value ?? "unknown"} className={cn("inline-flex min-h-7 items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium", tone, className)}>
       <span className="status-dot bg-current" aria-hidden />
-      {label(value)}
+      {text ?? label(value)}
     </span>
   );
 }
