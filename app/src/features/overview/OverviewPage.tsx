@@ -62,24 +62,27 @@ export default function OverviewPage() {
   );
   const metrics = [
     {
-      title: "今日已付款订单",
+      title: "今日付款订单",
       value: `${todayOrders.length} 单`,
-      detail: "按悉尼下单日期统计，取消订单不计入",
+      detail: "悉尼日期，不含取消订单",
     },
     {
       title: "今日订单金额 · AUD",
       value: money(
         audOrders.reduce((sum, order) => sum + Number(order.total), 0)
       ),
-      detail: "含买家运费与代收税，非利润；其他币种不混加",
+      detail: "含运费与代收税，不代表利润",
     },
     {
-      title: "今日订单已核实贡献利润",
+      title: "已核实贡献利润",
       value:
         data.permissions.finance && verified.length
           ? money(verified.reduce((sum, row) => sum + row.contribution, 0))
+          : "—",
+      detail:
+        data.permissions.finance && verified.length
+          ? "仅已核实订单，非净利润或到账"
           : "暂无已核实数据",
-      detail: "只汇总已核实订单，不代表全部订单利润或银行到账",
     },
   ];
   const queues = [
@@ -112,7 +115,7 @@ export default function OverviewPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="MERCHANT WORKSPACE / V2"
+        eyebrow="工作台 / 每日经营"
         title="今日经营"
         description="先看生意，再处理今天的订单。所有日期以悉尼时区展示。"
         actions={
@@ -122,7 +125,7 @@ export default function OverviewPage() {
           </Button>
         }
       />
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="workbench-metrics overview-metrics grid gap-0">
         {metrics.map(metric => (
           <section key={metric.title} className="ops-panel p-4">
             <p className="ops-label">{metric.title}</p>
@@ -170,19 +173,23 @@ export default function OverviewPage() {
       )}
 
       <h2 className="mb-3 mt-6 text-lg font-semibold">今天要做</h2>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {queues.map(queue => (
           <Link
             key={queue.to}
             to={queue.to}
-            className="ops-panel p-4 transition-colors hover:bg-accent/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="ops-panel workbench-action-tile p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <p className="font-medium">
               {queue.title}
               <ArrowRight className="float-right h-4 w-4" />
             </p>
-            <p className="metric-value my-3">{queue.count}</p>
-            <p className="text-xs text-muted-foreground">{queue.detail}</p>
+            <div className="mt-3 flex items-center gap-3">
+              <p className="text-2xl font-bold tabular-nums">{queue.count}</p>
+              <p className="text-xs leading-5 text-muted-foreground">
+                {queue.detail}
+              </p>
+            </div>
           </Link>
         ))}
       </div>

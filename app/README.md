@@ -74,6 +74,10 @@ npm run db:reset -- --yes --keep-users    # 只清业务数据，保留登录用
 - 选择保存在 `localStorage["aew-theme"]`（`light` / `dark` / `system`）
 - `index.html` 内联脚本在首屏渲染前写入 `html.dark` / `html.light`，避免闪烁
 - 颜色全部走 CSS 变量（`src/index.css`），运营面板、表格、状态标签在两种模式下都有独立对比度校准
+- 全站遵循根目录 `DESIGN.md` 的 Nike 风格中台规范：黑白灰、系统字体、平面化面板与胶囊按钮，
+  不依赖远程字体或 Nike 品牌素材；红 / 黄 / 绿 / 蓝只表达业务状态。
+- 新增表单使用带未保存确认的抽屉，决策说明使用统一确认窗口；失败保留输入。
+  从订单或补货链接进入时，继续保留原来的业务上下文与数量预填，不改变平台操作规则。
 
 ## 平台官方直连（Etsy / eBay）
 

@@ -180,7 +180,7 @@ export default function OrdersPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="ORDERS / NEXT ACTION"
+        eyebrow="交易 / 订单队列"
         title="订单处理"
         description="先处理待发货和卡住的订单。每笔订单都有明确的下一步，筛选条件会保留在链接中。"
         actions={
@@ -492,34 +492,47 @@ export default function OrdersPage() {
                         </details>
                       </td>
                       <td>
-                        <div className="max-w-80 space-y-2">
-                          {order.lines.map(line => (
-                            <div
-                              key={line.id}
-                              className="rounded-lg bg-secondary/35 p-2"
-                            >
-                              <p className="text-sm text-foreground">
-                                {line.title}
-                              </p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                SKU：
-                                <span className="font-mono text-primary">
-                                  {line.sku?.code ?? "未匹配"}
-                                </span>{" "}
-                                · 数量 {line.quantity} · 分配{" "}
-                                {line.allocatedQty} · 已发 {line.shippedQty} ·
-                                缺口{" "}
-                                <span
-                                  className={
-                                    line.shortageQty > 0 ? "text-red-300" : ""
-                                  }
-                                >
-                                  {line.shortageQty}
-                                </span>
-                              </p>
-                            </div>
-                          ))}
-                        </div>
+                        <p className="mb-1 max-w-80 line-clamp-1 text-sm font-medium">
+                          {order.lines.at(0)?.title ?? "暂无商品明细"}
+                        </p>
+                        <details className="max-w-80">
+                          <summary className="cursor-pointer text-xs text-muted-foreground">
+                            {order.lines.length} 项商品 · 合计{" "}
+                            {order.lines.reduce(
+                              (sum, line) => sum + line.quantity,
+                              0
+                            )}{" "}
+                            件，查看分配
+                          </summary>
+                          <div className="space-y-2">
+                            {order.lines.map(line => (
+                              <div
+                                key={line.id}
+                                className="rounded-lg bg-secondary/35 p-2"
+                              >
+                                <p className="text-sm text-foreground">
+                                  {line.title}
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  SKU：
+                                  <span className="font-mono text-primary">
+                                    {line.sku?.code ?? "未匹配"}
+                                  </span>{" "}
+                                  · 数量 {line.quantity} · 分配{" "}
+                                  {line.allocatedQty} · 已发 {line.shippedQty} ·
+                                  缺口{" "}
+                                  <span
+                                    className={
+                                      line.shortageQty > 0 ? "text-red-300" : ""
+                                    }
+                                  >
+                                    {line.shortageQty}
+                                  </span>
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
                       </td>
                       <td>
                         {order.shipments.length === 0 ? (
@@ -548,7 +561,7 @@ export default function OrdersPage() {
                         </p>
                       </td>
                       <td className="text-right">
-                        <p className="font-mono">
+                        <p className="font-semibold tabular-nums">
                           {money(order.total, order.currency)}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">

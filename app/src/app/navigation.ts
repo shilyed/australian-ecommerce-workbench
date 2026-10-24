@@ -21,3 +21,13 @@ export const menuItems = [
   { icon: Landmark, label: "利润与到账", path: "/finance" },
   { icon: Settings, label: "店铺与设置", path: "/settings" },
 ];
+
+export const menuSections = [
+  { label: "经营与履约", items: menuItems.slice(0, 4) },
+  { label: "商品与供应链", items: menuItems.slice(4, 7) },
+  { label: "经营管理", items: menuItems.slice(7) },
+];
+
+export function activeNavigationPath(pathname: string) {
+  return pathname.startsWith("/products/") ? "/inventory" : pathname;
+}

@@ -56,7 +56,11 @@ function PolicyField({
   return (
     <label className="grid gap-1">
       <span className="ops-label">{label}</span>
-      <select className="ops-input" value={value} onChange={event => onChange(event.target.value)}>
+      <select
+        className="ops-input"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+      >
         <option value="">请选择{label}</option>
         {value && !items.some(item => item.id === value) ? (
           <option value={value}>已保存：{value}（当前列表未返回）</option>
@@ -68,7 +72,9 @@ function PolicyField({
           </option>
         ))}
       </select>
-      {section?.error ? <span className="text-xs text-red-500">{section.error}</span> : null}
+      {section?.error ? (
+        <span className="text-xs text-red-500">{section.error}</span>
+      ) : null}
       {section && !section.error && items.length === 0 ? (
         <span className="text-xs text-muted-foreground">{emptyMessage}</span>
       ) : null}
@@ -76,7 +82,10 @@ function PolicyField({
   );
 }
 
-function policyName(section: OptionsSection<PolicyOption> | undefined, id: string) {
+function policyName(
+  section: OptionsSection<PolicyOption> | undefined,
+  id: string
+) {
   return section?.items.find(item => item.id === id)?.name ?? id;
 }
 
@@ -96,17 +105,24 @@ function PublishSummary({
     ["店铺 / 市场", `${shopName} · ${marketplaceId}`],
     ["eBay SKU", form.ebaySku],
     ["标题", form.title],
-    ["售价 / 数量", `AUD ${Number(form.priceAud).toFixed(2)} / ${form.quantity} 件`],
+    [
+      "售价 / 数量",
+      `AUD ${Number(form.priceAud).toFixed(2)} / ${form.quantity} 件`,
+    ],
     [
       "成色",
-      EBAY_CONDITION_OPTIONS.find(item => item.value === form.condition)?.label ?? form.condition,
+      EBAY_CONDITION_OPTIONS.find(item => item.value === form.condition)
+        ?.label ?? form.condition,
     ],
     ["类目 ID", form.categoryId],
     [
       "包裹",
       `${form.packageWeightG} g · ${form.packageLengthCm} × ${form.packageWidthCm} × ${form.packageHeightCm} cm`,
     ],
-    ["运费政策", policyName(options?.fulfillmentPolicies, form.fulfillmentPolicyId)],
+    [
+      "运费政策",
+      policyName(options?.fulfillmentPolicies, form.fulfillmentPolicyId),
+    ],
     ["付款政策", policyName(options?.paymentPolicies, form.paymentPolicyId)],
     ["退货政策", policyName(options?.returnPolicies, form.returnPolicyId)],
     ["发货地点", policyName(options?.locations, form.merchantLocationKey)],
@@ -115,7 +131,10 @@ function PublishSummary({
     <div className="grid gap-3 text-sm">
       <dl>
         {fields.map(([name, value]) => (
-          <div key={name} className="grid grid-cols-[7rem_1fr] gap-2 border-b py-2">
+          <div
+            key={name}
+            className="grid grid-cols-[7rem_1fr] gap-2 border-b py-2"
+          >
             <dt className="text-muted-foreground">{name}</dt>
             <dd className="min-w-0 break-words">{value}</dd>
           </div>
@@ -163,18 +182,24 @@ function EbayListingEditor({
   const { listing, sku, store, canWriteToPlatform, marketplaceId } = detail;
   const { user } = useAuth();
   const canEdit =
-    user?.status === "active" && (user.role === "admin" || user.businessRole === "operations");
+    user?.status === "active" &&
+    (user.role === "admin" || user.businessRole === "operations");
   const isAdmin = user?.status === "active" && user.role === "admin";
   const utils = trpc.useUtils();
   const [form, setForm] = useState(() => formFromDraft(listing.localPayload));
   const [categoryText, setCategoryText] = useState("");
   const [categoryQuery, setCategoryQuery] = useState("");
-  const [optionsCategoryId, setOptionsCategoryId] = useState(form.categoryId.trim());
+  const [optionsCategoryId, setOptionsCategoryId] = useState(
+    form.categoryId.trim()
+  );
   const [dialog, setDialog] = useState<"publish" | "unpublish" | null>(null);
   const [reason, setReason] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setOptionsCategoryId(form.categoryId.trim()), 400);
+    const timer = setTimeout(
+      () => setOptionsCategoryId(form.categoryId.trim()),
+      400
+    );
     return () => clearTimeout(timer);
   }, [form.categoryId]);
 
@@ -184,7 +209,12 @@ function EbayListingEditor({
       categoryId: optionsCategoryId || undefined,
       categoryQuery: categoryQuery || undefined,
     },
-    { enabled: canEdit, retry: false, staleTime: 60_000, refetchOnWindowFocus: false }
+    {
+      enabled: canEdit,
+      retry: false,
+      staleTime: 60_000,
+      refetchOnWindowFocus: false,
+    }
   );
 
   const refresh = async () => {
@@ -204,7 +234,9 @@ function EbayListingEditor({
   const push = trpc.marketplace.push.useMutation({
     onSuccess: result =>
       toast.success(
-        result.status === "published" ? "已更新 eBay 当前在售商品" : "已更新到 eBay，尚未发布"
+        result.status === "published"
+          ? "已更新 eBay 当前在售商品"
+          : "已更新到 eBay，尚未发布"
       ),
     onError: error => toast.error(error.message),
     onSettled: refresh,
@@ -230,7 +262,9 @@ function EbayListingEditor({
   const setField = <K extends keyof EbayForm>(key: K, value: EbayForm[K]) =>
     setForm(current => ({ ...current, [key]: value }));
   const draft = draftFromForm(form);
-  const requiredAspects = (options.data?.aspects.items ?? []).filter(aspect => aspect.required);
+  const requiredAspects = (options.data?.aspects.items ?? []).filter(
+    aspect => aspect.required
+  );
   const missingAspects = missingRequiredAspects(
     draft,
     requiredAspects.map(aspect => aspect.name)
@@ -239,8 +273,14 @@ function EbayListingEditor({
     ...readinessIssues(draft),
     ...missingAspects.map(name => `类目必填属性：${name}`),
   ];
-  const unsaved = JSON.stringify(form) !== JSON.stringify(formFromDraft(listing.localPayload));
-  const busy = save.isPending || push.isPending || publish.isPending || unpublish.isPending;
+  const unsaved =
+    JSON.stringify(form) !==
+    JSON.stringify(formFromDraft(listing.localPayload));
+  const busy =
+    save.isPending ||
+    push.isPending ||
+    publish.isPending ||
+    unpublish.isPending;
   const categoryChecked =
     optionsCategoryId === draft.categoryId &&
     Boolean(options.data) &&
@@ -261,7 +301,11 @@ function EbayListingEditor({
     Boolean(listing.externalOfferId) &&
     !listing.hasUnpushedChanges;
   const canUnpublish =
-    isAdmin && canWriteToPlatform && !busy && !refreshError && listing.status === "published";
+    isAdmin &&
+    canWriteToPlatform &&
+    !busy &&
+    !refreshError &&
+    listing.status === "published";
   const missingScopes = options.data?.missingScopes ?? [];
   const editDisabled = !canEdit || busy || dialog !== null;
 
@@ -298,17 +342,25 @@ function EbayListingEditor({
         }
       />
 
+      <nav className="workbench-section-nav" aria-label="刊登资料分区">
+        <a href="#ebay-basic">刊登资料</a>
+        <a href="#ebay-category">类目与属性</a>
+        <a href="#ebay-shipping">包裹与发货政策</a>
+      </nav>
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <form
           id="ebay-listing-form"
           onSubmit={event => {
             event.preventDefault();
             if (canEdit && !busy && dialog === null)
-              save.mutate({ listingId: listing.id, payload: draftFromForm(form) });
+              save.mutate({
+                listingId: listing.id,
+                payload: draftFromForm(form),
+              });
           }}
         >
           <fieldset disabled={editDisabled} className="grid min-w-0 gap-5">
-            <section className="ops-panel">
+            <section id="ebay-basic" className="ops-panel workbench-section">
               <div className="ops-panel-header">
                 <h2 className="ops-title">刊登资料</h2>
               </div>
@@ -321,7 +373,9 @@ function EbayListingEditor({
                       maxLength={50}
                       className="ops-input font-mono"
                       value={form.ebaySku}
-                      onChange={event => setField("ebaySku", event.target.value)}
+                      onChange={event =>
+                        setField("ebaySku", event.target.value)
+                      }
                     />
                     <span className="text-xs text-muted-foreground">
                       字母、数字、点、下划线和短横线，最多 50 位
@@ -378,7 +432,9 @@ function EbayListingEditor({
                     rows={7}
                     className="bg-secondary/70"
                     value={form.description}
-                    onChange={event => setField("description", event.target.value)}
+                    onChange={event =>
+                      setField("description", event.target.value)
+                    }
                   />
                 </label>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -392,7 +448,9 @@ function EbayListingEditor({
                       step="0.01"
                       className="ops-input"
                       value={form.priceAud}
-                      onChange={event => setField("priceAud", event.target.value)}
+                      onChange={event =>
+                        setField("priceAud", event.target.value)
+                      }
                     />
                   </label>
                   <label className="grid gap-1">
@@ -405,7 +463,9 @@ function EbayListingEditor({
                       step="1"
                       className="ops-input"
                       value={form.quantity}
-                      onChange={event => setField("quantity", event.target.value)}
+                      onChange={event =>
+                        setField("quantity", event.target.value)
+                      }
                     />
                   </label>
                 </div>
@@ -417,16 +477,19 @@ function EbayListingEditor({
                     className="bg-secondary/70 font-mono text-xs"
                     placeholder="https://..."
                     value={form.imageUrls}
-                    onChange={event => setField("imageUrls", event.target.value)}
+                    onChange={event =>
+                      setField("imageUrls", event.target.value)
+                    }
                   />
                   <span className="text-xs text-muted-foreground">
-                    推送时需要 1–12 张公开可访问的 https 图片，不会自动上传本地图片。
+                    推送时需要 1–12 张公开可访问的 https
+                    图片，不会自动上传本地图片。
                   </span>
                 </label>
               </div>
             </section>
 
-            <section className="ops-panel">
+            <section id="ebay-category" className="ops-panel workbench-section">
               <div className="ops-panel-header">
                 <h2 className="ops-title">类目与属性</h2>
               </div>
@@ -500,7 +563,9 @@ function EbayListingEditor({
                     inputMode="numeric"
                     className="ops-input font-mono"
                     value={form.categoryId}
-                    onChange={event => setField("categoryId", event.target.value)}
+                    onChange={event =>
+                      setField("categoryId", event.target.value)
+                    }
                   />
                 </label>
                 {options.isFetching ? (
@@ -526,7 +591,9 @@ function EbayListingEditor({
                           onClick={() => {
                             if (
                               !form.aspects.some(
-                                row => row.name.trim().toLowerCase() === aspect.name.toLowerCase()
+                                row =>
+                                  row.name.trim().toLowerCase() ===
+                                  aspect.name.toLowerCase()
                               )
                             ) {
                               setField("aspects", [
@@ -552,7 +619,9 @@ function EbayListingEditor({
                 <div className="grid gap-3">
                   {form.aspects.map((row, index) => {
                     const aspect = options.data?.aspects.items.find(
-                      item => item.name.toLowerCase() === row.name.trim().toLowerCase()
+                      item =>
+                        item.name.toLowerCase() ===
+                        row.name.trim().toLowerCase()
                     );
                     return (
                       <div
@@ -572,14 +641,18 @@ function EbayListingEditor({
                               setField(
                                 "aspects",
                                 form.aspects.map((item, rowIndex) =>
-                                  rowIndex === index ? { ...item, name: event.target.value } : item
+                                  rowIndex === index
+                                    ? { ...item, name: event.target.value }
+                                    : item
                                 )
                               )
                             }
                           />
                         </label>
                         <label className="grid gap-1">
-                          <span className="ops-label">属性值（多个值用分号分隔）</span>
+                          <span className="ops-label">
+                            属性值（多个值用分号分隔）
+                          </span>
                           <Input
                             list={`ebay-aspect-values-${index}`}
                             className="ops-input"
@@ -602,7 +675,10 @@ function EbayListingEditor({
                           </datalist>
                           {aspect?.mode === "SELECTION_ONLY" ? (
                             <span className="text-xs text-muted-foreground">
-                              请使用 eBay 建议值{aspect.multiple ? "，支持多值" : "，仅支持一个值"}
+                              请使用 eBay 建议值
+                              {aspect.multiple
+                                ? "，支持多值"
+                                : "，仅支持一个值"}
                             </span>
                           ) : null}
                         </label>
@@ -615,7 +691,9 @@ function EbayListingEditor({
                           onClick={() =>
                             setField(
                               "aspects",
-                              form.aspects.filter((_, rowIndex) => rowIndex !== index)
+                              form.aspects.filter(
+                                (_, rowIndex) => rowIndex !== index
+                              )
                             )
                           }
                         >
@@ -628,7 +706,12 @@ function EbayListingEditor({
                     type="button"
                     variant="outline"
                     className="justify-self-start"
-                    onClick={() => setField("aspects", [...form.aspects, { name: "", values: "" }])}
+                    onClick={() =>
+                      setField("aspects", [
+                        ...form.aspects,
+                        { name: "", values: "" },
+                      ])
+                    }
                   >
                     <Plus className="h-4 w-4" /> 添加属性
                   </Button>
@@ -636,7 +719,7 @@ function EbayListingEditor({
               </div>
             </section>
 
-            <section className="ops-panel">
+            <section id="ebay-shipping" className="ops-panel workbench-section">
               <div className="ops-panel-header">
                 <h2 className="ops-title">包裹与发货政策</h2>
               </div>
@@ -711,7 +794,10 @@ function EbayListingEditor({
                 Listing ID：{listing.externalListingId ?? "尚未发布"}
               </p>
               <p className="text-xs text-muted-foreground">
-                最近推送：{listing.lastPushedAt ? dateTime(listing.lastPushedAt) : "从未推送"}
+                最近推送：
+                {listing.lastPushedAt
+                  ? dateTime(listing.lastPushedAt)
+                  : "从未推送"}
               </p>
               {unsaved ? (
                 <p
@@ -728,7 +814,8 @@ function EbayListingEditor({
               ) : null}
               {listing.status === "publishing" ? (
                 <p role="status">
-                  正在发布，请等待并刷新状态。若超过 5 分钟仍未结束，可尝试“更新到 eBay”恢复。
+                  正在发布，请等待并刷新状态。若超过 5
+                  分钟仍未结束，可尝试“更新到 eBay”恢复。
                 </p>
               ) : null}
               {listing.lastError ? (
@@ -765,7 +852,8 @@ function EbayListingEditor({
               ) : null}
               {options.error ? (
                 <p role="alert" className="text-red-500">
-                  eBay 选项读取失败：{options.error.message}。请检查授权后重新读取。
+                  eBay 选项读取失败：{options.error.message}
+                  。请检查授权后重新读取。
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-2">
@@ -818,7 +906,11 @@ function EbayListingEditor({
           </section>
           <section className="ops-panel">
             <div className="grid gap-2 p-4">
-              <Button type="submit" form="ebay-listing-form" disabled={!canEdit || busy}>
+              <Button
+                type="submit"
+                form="ebay-listing-form"
+                disabled={!canEdit || busy}
+              >
                 {save.isPending ? "保存中…" : "保存草稿"}
               </Button>
               <Button
@@ -829,7 +921,11 @@ function EbayListingEditor({
               >
                 {push.isPending ? "更新中…" : "更新到 eBay"}
               </Button>
-              <Button type="button" disabled={!canPublish} onClick={() => setDialog("publish")}>
+              <Button
+                type="button"
+                disabled={!canPublish}
+                onClick={() => setDialog("publish")}
+              >
                 {publish.isPending ? "发布中…" : "核对并发布"}
               </Button>
               <Button
@@ -859,7 +955,9 @@ function EbayListingEditor({
         <AlertDialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {dialog === "publish" ? "核对 eBay 刊登并确认发布" : "确认从 eBay 下架"}
+              {dialog === "publish"
+                ? "核对 eBay 刊登并确认发布"
+                : "确认从 eBay 下架"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {dialog === "publish"
@@ -877,7 +975,8 @@ function EbayListingEditor({
           ) : (
             <div className="grid gap-3">
               <p className="text-sm">
-                店铺：{store?.shopName} · Listing ID：{listing.externalListingId ?? "未返回"}
+                店铺：{store?.shopName} · Listing ID：
+                {listing.externalListingId ?? "未返回"}
               </p>
               <label className="grid gap-1">
                 <span className="ops-label">下架原因（2–500 字）</span>
@@ -897,17 +996,31 @@ function EbayListingEditor({
             <AlertDialogCancel disabled={busy}>取消</AlertDialogCancel>
             <AlertDialogAction
               disabled={
-                dialog === "publish" ? !canPublish : !canUnpublish || reason.trim().length < 2
+                dialog === "publish"
+                  ? !canPublish
+                  : !canUnpublish || reason.trim().length < 2
               }
               onClick={event => {
                 event.preventDefault();
                 if (dialog === "publish" && canPublish)
                   publish.mutate({ listingId: listing.id, confirm: true });
-                if (dialog === "unpublish" && canUnpublish && reason.trim().length >= 2)
-                  unpublish.mutate({ listingId: listing.id, confirm: true, reason: reason.trim() });
+                if (
+                  dialog === "unpublish" &&
+                  canUnpublish &&
+                  reason.trim().length >= 2
+                )
+                  unpublish.mutate({
+                    listingId: listing.id,
+                    confirm: true,
+                    reason: reason.trim(),
+                  });
               }}
             >
-              {busy ? "处理中…" : dialog === "publish" ? "确认发布到 eBay" : "确认下架"}
+              {busy
+                ? "处理中…"
+                : dialog === "publish"
+                  ? "确认发布到 eBay"
+                  : "确认下架"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -919,14 +1032,20 @@ function EbayListingEditor({
 export default function EbayListingPage() {
   const skuId = Number(useParams().skuId);
   const validSkuId = Number.isSafeInteger(skuId) && skuId > 0;
-  const listings = trpc.marketplace.list.useQuery({ skuId }, { enabled: validSkuId, retry: false });
-  const listing = listings.data?.listings.find(item => item.platform === "ebay");
+  const listings = trpc.marketplace.list.useQuery(
+    { skuId },
+    { enabled: validSkuId, retry: false }
+  );
+  const listing = listings.data?.listings.find(
+    item => item.platform === "ebay"
+  );
   const detail = trpc.marketplace.get.useQuery(
     { listingId: listing?.id ?? 0 },
     {
       enabled: Boolean(listing),
       retry: false,
-      refetchInterval: query => (query.state.data?.listing.status === "publishing" ? 3_000 : false),
+      refetchInterval: query =>
+        query.state.data?.listing.status === "publishing" ? 3_000 : false,
     }
   );
 
@@ -942,7 +1061,8 @@ export default function EbayListingPage() {
         }
       />
     );
-  if (listings.isLoading || (listing && detail.isLoading)) return <LoadingPanel />;
+  if (listings.isLoading || (listing && detail.isLoading))
+    return <LoadingPanel />;
   if (!listings.data)
     return (
       <EmptyPanel

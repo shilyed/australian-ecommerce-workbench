@@ -13,6 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/workbench/PageHeader";
+import { FormSheet } from "@/components/workbench/FormSheet";
+import {
+  DecisionDialog,
+  type DecisionRequest,
+} from "@/components/workbench/DecisionDialog";
 import { EmptyPanel, LoadingPanel } from "@/components/workbench/States";
 import { StatusPill } from "@/components/workbench/StatusPill";
 import { dateTime, money, percent } from "@/lib/format";
@@ -23,6 +28,17 @@ export default function CatalogPage() {
   const workspace = useWorkspace();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
+  const [decision, setDecision] = useState<DecisionRequest | null>(null);
+  const setPanel = (panel: string, open: boolean) =>
+    setParams(
+      previous => {
+        const next = new URLSearchParams(previous);
+        if (open) next.set("panel", panel);
+        else if (next.get("panel") === panel) next.delete("panel");
+        return next;
+      },
+      { replace: true }
+    );
   const risk = params.get("risk") ?? "all";
   const setRisk = (value: string) =>
     setParams(previous => {
@@ -33,6 +49,7 @@ export default function CatalogPage() {
   const createSku = trpc.workbench.createSku.useMutation({
     onSuccess: async () => {
       toast.success("SKU 已创建，编码全局唯一");
+      setPanel("create", false);
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -40,6 +57,7 @@ export default function CatalogPage() {
   const linkListing = trpc.workbench.linkListing.useMutation({
     onSuccess: async () => {
       toast.success("渠道映射已确认；历史订单 SKU 快照不受影响");
+      setPanel("mapping", false);
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -102,21 +120,30 @@ export default function CatalogPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="CATALOG / STOCK AND REPLENISHMENT"
+        eyebrow="商品 / 库存与补货"
         title="商品与补货"
         description="先看还能卖多少、订单缺多少、采购在途多少。补货前先检查在途，避免重复采购。"
       />
 
       <div className="grid gap-4">
-        <div className="grid items-start gap-4 md:grid-cols-2">
-          <details
-            className="ops-panel"
+        <div className="flex flex-wrap items-start gap-2">
+          <FormSheet
+            title="新建商品 / SKU"
+            description="建立内部商品与唯一 SKU，不会自动创建平台刊登。"
             open={params.get("panel") === "create"}
+            onOpenChange={open => {
+              if (open) createSku.reset();
+              setPanel("create", open);
+            }}
+            pending={createSku.isPending}
+            error={createSku.error?.message}
+            trigger={
+              <Button disabled={createSku.isPending}>
+                <PackagePlus className="mr-2 h-4 w-4" />
+                新建商品 / SKU
+              </Button>
+            }
           >
-            <summary className="cursor-pointer p-4 font-semibold">
-              <PackagePlus className="mr-2 inline h-4 w-4" />
-              新建商品 / SKU
-            </summary>
             <form onSubmit={submitSku} className="grid gap-3 p-4">
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-1">
@@ -195,17 +222,32 @@ export default function CatalogPage() {
                 创建 SKU
               </Button>
             </form>
-          </details>
+          </FormSheet>
 
-          <details
-            className="ops-panel"
+          <FormSheet
+            title="匹配平台商品与库存商品"
+            description="首次映射或调整需记录原因，历史订单 SKU 快照不会追溯改变。"
             open={params.get("panel") === "mapping"}
+            onOpenChange={open => {
+              if (open) linkListing.reset();
+              setPanel("mapping", open);
+            }}
+            pending={linkListing.isPending}
+            error={linkListing.error?.message}
+            trigger={
+              <Button variant="outline" disabled={linkListing.isPending}>
+                <Link2 className="mr-2 h-4 w-4" />
+                匹配平台商品
+              </Button>
+            }
           >
-            <summary className="cursor-pointer p-4 font-semibold">
-              <Link2 className="mr-2 inline h-4 w-4" />
-              匹配平台商品与库存商品
-            </summary>
             <div className="space-y-3 p-4">
+              {data.listings.length === 0 && (
+                <EmptyPanel
+                  title="暂无可映射的平台商品"
+                  description="先连接店铺并读取平台刊登，再将平台商品与内部 SKU 对应。此处不会自动创建或发布商品。"
+                />
+              )}
               {data.listings.map(listing => (
                 <article
                   key={listing.id}
@@ -238,7 +280,7 @@ export default function CatalogPage() {
                   </p>
                   <div className="mt-3 flex gap-2">
                     <select
-                      id={`sku-${listing.id}`}
+                      id={`mapping-sku-${listing.id}`}
                       className="ops-input min-w-0 flex-1"
                       defaultValue={listing.skuId ?? ""}
                     >
@@ -256,18 +298,33 @@ export default function CatalogPage() {
                       variant="outline"
                       onClick={() => {
                         const select = document.getElementById(
-                          `sku-${listing.id}`
-                        ) as HTMLSelectElement | null;
-                        const skuId = Number(select?.value);
-                        const reason = window.prompt(
-                          "首次映射/调整原因；已产生订单的历史 SKU 不追溯改变"
+                          `mapping-sku-${listing.id}`
                         );
-                        if (skuId && reason)
-                          linkListing.mutate({
-                            listingId: listing.id,
-                            skuId,
-                            reason,
-                          });
+                        const skuId =
+                          select instanceof HTMLSelectElement
+                            ? Number(select.value)
+                            : 0;
+                        if (!skuId) {
+                          toast.error("请先选择需要映射的 SKU");
+                          return;
+                        }
+                        setDecision({
+                          title: "确认平台商品映射",
+                          description: `${listing.title}：首次映射或调整必须记录原因，历史订单 SKU 不追溯改变。`,
+                          fields: [
+                            {
+                              name: "reason",
+                              label: "映射 / 调整原因",
+                              type: "textarea",
+                            },
+                          ],
+                          onConfirm: form =>
+                            linkListing.mutateAsync({
+                              listingId: listing.id,
+                              skuId,
+                              reason: String(form.get("reason") ?? "").trim(),
+                            }),
+                        });
                       }}
                     >
                       确认映射
@@ -276,7 +333,7 @@ export default function CatalogPage() {
                 </article>
               ))}
             </div>
-          </details>
+          </FormSheet>
         </div>
 
         <section className="ops-panel min-w-0">
@@ -308,6 +365,11 @@ export default function CatalogPage() {
                 </SelectContent>
               </Select>
             </div>
+            <DecisionDialog
+              key={decision?.title ?? "closed"}
+              request={decision}
+              onClose={() => setDecision(null)}
+            />
           </div>
           {rows.length === 0 ? (
             <EmptyPanel

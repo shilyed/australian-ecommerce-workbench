@@ -174,9 +174,9 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="SYSTEM / GOVERNANCE"
+        eyebrow="管理 / 店铺与设置"
         title="系统设置"
-        description="店铺授权、写回开关、成员角色、同步任务与审计日志集中在这里。平台写回属于 P0-B 能力，默认关闭，开启前必须单独验证。"
+        description="管理店铺授权、成员角色、同步任务与审计记录。平台写回默认关闭，启用前必须完成单独联调；开关开启不代表平台已执行成功。"
         actions={
           <Button
             variant="outline"
@@ -189,13 +189,21 @@ export default function SettingsPage() {
         }
       />
 
+      <nav className="workbench-section-nav" aria-label="系统设置分区">
+        <a href="#connections">店铺连接</a>
+        <a href="#members">成员与权限</a>
+        <a href="#sync">同步任务</a>
+        <a href="#audit">审计日志</a>
+        <a href="#appearance">外观</a>
+      </nav>
+
       {!isAdmin && (
         <div className="ops-panel mb-4 border-amber-500/30 p-4 text-sm leading-6 text-amber-200">
           当前角色不是管理员：可以查看授权与同步状态，但店铺写回开关和成员角色由服务端拦截，只有管理员可修改。
         </div>
       )}
 
-      <section className="ops-panel mb-4">
+      <section id="connections" className="ops-panel workbench-section mb-4">
         <div className="ops-panel-header">
           <div>
             <h2 className="ops-title flex items-center gap-2">
@@ -436,7 +444,7 @@ export default function SettingsPage() {
           )}
         </section>
 
-        <section className="ops-panel">
+        <section id="members" className="ops-panel workbench-section">
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title flex items-center gap-2">
@@ -748,7 +756,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="ops-panel">
+        <section id="sync" className="ops-panel workbench-section">
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title flex items-center gap-2">
@@ -850,7 +858,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="ops-panel">
+        <section id="audit" className="ops-panel workbench-section">
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title flex items-center gap-2">
@@ -908,7 +916,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="ops-panel xl:col-span-2">
+        <section
+          id="appearance"
+          className="ops-panel workbench-section xl:col-span-2"
+        >
           <div className="ops-panel-header">
             <div>
               <h2 className="ops-title flex items-center gap-2">
@@ -949,8 +960,8 @@ export default function SettingsPage() {
             ))}
           </div>
           <div className="border-t border-border/60 p-4 text-xs leading-5 text-muted-foreground">
-            夜间模式沿用深海军蓝 + 青色高亮；日间模式使用冷灰底 +
-            深青主色，并单独压暗了状态标签颜色，保证表格在强光环境下仍然清晰。
+            全站采用统一的黑白灰、平面化内容与胶囊按钮。日间与夜间模式保留独立的
+            文字、边界和状态语义颜色；外观选择不会影响业务数据或平台操作权限。
           </div>
         </section>
       </div>

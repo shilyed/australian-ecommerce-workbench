@@ -24,7 +24,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/providers/theme-context";
 import { LogOut, Moon, PanelLeft, Sun } from "lucide-react";
-import { menuItems } from "@/app/navigation";
+import {
+  activeNavigationPath,
+  menuItems,
+  menuSections,
+} from "@/app/navigation";
 import {
   type CSSProperties,
   type ReactNode,
@@ -38,7 +42,7 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 280;
+const DEFAULT_WIDTH = 232;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 
@@ -80,7 +84,7 @@ export default function AuthLayout({
               window.location.href = LOGIN_PATH;
             }}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full"
           >
             登录工作台
           </Button>
@@ -98,7 +102,10 @@ export default function AuthLayout({
         } as CSSProperties
       }
     >
-      <AuthLayoutContent className={className} setSidebarWidth={setSidebarWidth}>
+      <AuthLayoutContent
+        className={className}
+        setSidebarWidth={setSidebarWidth}
+      >
         {children}
       </AuthLayoutContent>
     </SidebarProvider>
@@ -124,9 +131,8 @@ function AuthLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(
-    item => item.path === location.pathname
-  );
+  const activePath = activeNavigationPath(location.pathname);
+  const activeMenuItem = menuItems.find(item => item.path === activePath);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -173,8 +179,8 @@ function AuthLayoutContent({
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="Toggle navigation"
+                className="h-11 w-11 flex items-center justify-center hover:bg-accent rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                aria-label="折叠或展开导航"
               >
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
@@ -189,33 +195,41 @@ function AuthLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive =
-                  location.pathname === item.path ||
-                  (item.path !== "/" &&
-                    location.pathname.startsWith(item.path));
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => {
-                        navigate(item.path);
-                        setOpenMobile(false);
-                      }}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+          <SidebarContent className="gap-4 pt-3">
+            {menuSections.map(section => (
+              <section key={section.label}>
+                {!isCollapsed && (
+                  <h2 className="mb-2 px-4 text-xs font-medium text-muted-foreground">
+                    {section.label}
+                  </h2>
+                )}
+                <SidebarMenu className="px-2 py-1">
+                  {section.items.map(item => {
+                    const isActive =
+                      activePath === item.path ||
+                      (item.path !== "/" && activePath.startsWith(item.path));
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => {
+                            navigate(item.path);
+                            setOpenMobile(false);
+                          }}
+                          tooltip={item.label}
+                          className={`h-10 transition-all font-normal`}
+                        >
+                          <item.icon
+                            className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                          />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </section>
+            ))}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
@@ -274,7 +288,7 @@ function AuthLayoutContent({
         />
       </div>
 
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-backdrop-filter:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
@@ -290,9 +304,9 @@ function AuthLayoutContent({
             <ThemeToggle />
           </div>
         )}
-        <main className="flex-1 overflow-x-clip p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:p-4 lg:p-6">
+        <div className="workbench-main flex-1 overflow-x-clip p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:p-4 lg:p-6">
           {children}
-        </main>
+        </div>
       </SidebarInset>
     </>
   );

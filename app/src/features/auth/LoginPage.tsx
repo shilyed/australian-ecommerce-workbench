@@ -71,44 +71,46 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background px-4 py-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,hsla(var(--primary)/0.16),transparent_34%),radial-gradient(circle_at_82%_80%,hsla(var(--primary)/0.1),transparent_38%)]" />
+    <div className="relative min-h-screen bg-background px-4 py-8 sm:px-8">
       <div className="absolute right-4 top-4 z-10">
         <ThemeToggle className="h-10 w-10 border bg-card/80" />
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="hidden lg:block">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-              AUSTRALIAN ECOMMERCE WORKBENCH
+        <div className="grid w-full items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="hidden min-h-[520px] flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
+            <p className="text-xs font-medium opacity-75">
+              中澳运营台 / 跨境经营
             </p>
-            <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-tight">
-              把中澳跨境的订单、库存、采购与利润，放回同一条经营链路。
-            </h1>
-            <p className="mt-5 max-w-lg text-sm leading-7 text-muted-foreground">
-              工作台数据保存在你自己的服务器和数据库中。登录只使用工作台账户，
-              不再经过 Kimi 或其他第三方身份平台。
-            </p>
-            <div className="mt-8 grid max-w-lg gap-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/45 p-3">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                密码使用 scrypt 加盐散列，会话 Cookie 仅服务端可读
-              </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/45 p-3">
-                <LockKeyhole className="h-5 w-5 text-primary" />
-                首次启动创建管理员，之后由管理员添加成员
-              </div>
+            <div>
+              <h2 className="max-w-sm text-[32px] font-bold leading-tight">
+                中澳跨境
+                <br />
+                电商工作台
+              </h2>
+              <p className="mt-5 max-w-sm text-sm leading-7 opacity-80">
+                从选品、采购到订单交付，集中处理经营事务，保留每一步业务记录。
+              </p>
+            </div>
+            <div className="space-y-4 border-t border-primary-foreground/20 pt-6 text-sm">
+              <p className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 shrink-0" />
+                数据保存在你自己的服务器
+              </p>
+              <p className="flex items-center gap-3">
+                <LockKeyhole className="h-5 w-5 shrink-0" />
+                邮箱密码登录，成员按角色分工
+              </p>
             </div>
           </div>
 
-          <Card className="w-full border-border/70 bg-card/85 shadow-2xl backdrop-blur">
+          <Card className="w-full border-0 bg-background shadow-none">
             <CardHeader className="space-y-2 text-center">
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-secondary">
                 <LockKeyhole className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle className="text-2xl">
-                {needsSetup ? "创建管理员账号" : "登录工作台"}
+              <CardTitle className="text-[28px] font-bold">
+                <h1>{needsSetup ? "创建管理员账号" : "登录工作台"}</h1>
               </CardTitle>
               <CardDescription>
                 {needsSetup

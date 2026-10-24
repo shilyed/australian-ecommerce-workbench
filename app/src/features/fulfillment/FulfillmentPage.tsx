@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/workbench/PageHeader";
+import { FormSheet } from "@/components/workbench/FormSheet";
 import { EmptyPanel, LoadingPanel } from "@/components/workbench/States";
 import { StatusPill } from "@/components/workbench/StatusPill";
 import { dateTime, label, money } from "@/lib/format";
@@ -36,7 +37,28 @@ export default function FulfillmentPage({
     id: number;
     kind: "dispatch" | "platform_confirmed" | "platform_failed";
   } | null>(null);
-  const setOrderId = (id: number) => setParams({ order: String(id) });
+  const setOrderId = (id: number) =>
+    setParams(
+      previous => {
+        const next = new URLSearchParams(previous);
+        next.set("order", String(id));
+        return next;
+      },
+      { replace: true }
+    );
+  const setPanel = (panel: string, open: boolean) =>
+    setParams(
+      previous => {
+        const next = new URLSearchParams(previous);
+        if (open) next.set("panel", panel);
+        else if (next.get("panel") === panel) {
+          next.delete("panel");
+          if (panel === "create-shipment") next.delete("order");
+        }
+        return next;
+      },
+      { replace: true }
+    );
   const createShipment = trpc.workbench.createShipment.useMutation({
     onSuccess: async result => {
       toast.success(
@@ -45,6 +67,7 @@ export default function FulfillmentPage({
           : `包裹 ${result.packageNo} 已保存，交给物流后请确认交运`
       );
       setShipmentKey(crypto.randomUUID());
+      setPanel("create-shipment", false);
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -77,6 +100,7 @@ export default function FulfillmentPage({
           ? "相同外部售后事件已关联，未重复冲减"
           : "售后事件已创建"
       );
+      setPanel("create-after-sales", false);
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -127,6 +151,10 @@ export default function FulfillmentPage({
       />
     );
   if (!data) return null;
+  const creationPanel =
+    mode === "shipping" ? "create-shipment" : "create-after-sales";
+  const inlineCreation =
+    orderId !== null && params.get("panel") !== creationPanel;
 
   const submitShipment = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -177,11 +205,7 @@ export default function FulfillmentPage({
   return (
     <div>
       <PageHeader
-        eyebrow={
-          mode === "shipping"
-            ? "FULFILLMENT / PACK AND DISPATCH"
-            : "AFTER SALES / RESOLVE"
-        }
+        eyebrow={mode === "shipping" ? "履约 / 包裹交运" : "服务 / 售后处理"}
         title={mode === "shipping" ? "打包发货" : "售后处理"}
         description={
           mode === "shipping"
@@ -199,14 +223,35 @@ export default function FulfillmentPage({
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <div className="space-y-4">
+      <div
+        className={
+          inlineCreation
+            ? "grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]"
+            : "space-y-6"
+        }
+      >
+        <div className="flex flex-wrap items-start gap-2">
           {mode === "shipping" && (
-            <section className="ops-panel">
-              <div className="ops-panel-header">
-                <h2 className="ops-title">核对商品并创建包裹</h2>
-                <Send className="h-4 w-4 text-primary" />
-              </div>
+            <FormSheet
+              title="核对商品并创建包裹"
+              description="保存包裹不会确认交运，实际交给物流后需单独核对。"
+              open={params.get("panel") === "create-shipment"}
+              onOpenChange={open => {
+                if (open) createShipment.reset();
+                setPanel("create-shipment", open);
+              }}
+              inline={inlineCreation}
+              pending={createShipment.isPending}
+              error={createShipment.error?.message}
+              trigger={
+                <Button
+                  disabled={!shippableOrders.length || createShipment.isPending}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  新建包裹
+                </Button>
+              }
+            >
               <form
                 key={`${selectedOrder?.id}-${shipmentKey}-${selectedOrder?.lines.map(line => shipmentRemainder(selectedOrder, line)).join("-")}`}
                 onSubmit={submitShipment}
@@ -321,15 +366,30 @@ export default function FulfillmentPage({
                   保存包裹，待交给物流
                 </Button>
               </form>
-            </section>
+            </FormSheet>
           )}
 
           {mode === "after-sales" && (
-            <section className="ops-panel">
-              <div className="ops-panel-header">
-                <h2 className="ops-title">创建售后事件</h2>
-                <RotateCcw className="h-4 w-4 text-amber-300" />
-              </div>
+            <FormSheet
+              title="创建售后事件"
+              description="记录退款、退货或补发事实，不会自动向平台退款。"
+              open={params.get("panel") === "create-after-sales"}
+              onOpenChange={open => {
+                if (open) createAfterSales.reset();
+                setPanel("create-after-sales", open);
+              }}
+              inline={inlineCreation}
+              pending={createAfterSales.isPending}
+              error={createAfterSales.error?.message}
+              trigger={
+                <Button
+                  disabled={!data.orders.length || createAfterSales.isPending}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  新增售后事件
+                </Button>
+              }
+            >
               <form onSubmit={submitAfterSales} className="grid gap-3 p-4">
                 <label className="grid gap-1">
                   <span className="ops-label">订单</span>
@@ -397,7 +457,7 @@ export default function FulfillmentPage({
                   创建售后
                 </Button>
               </form>
-            </section>
+            </FormSheet>
           )}
         </div>
 
@@ -416,6 +476,11 @@ export default function FulfillmentPage({
                 <EmptyPanel
                   title="暂无包裹"
                   description="从可发货订单核对商品并创建包裹。"
+                  action={
+                    <Button asChild variant="outline">
+                      <Link to="/orders?queue=to_ship">查看待发货订单</Link>
+                    </Button>
+                  }
                 />
               ) : (
                 <div className="table-scroll">
@@ -473,7 +538,7 @@ export default function FulfillmentPage({
                               </a>
                             )}
                           </td>
-                          <td className="font-mono">
+                          <td className="tabular-nums">
                             {money(
                               shipment.freightActual ??
                                 shipment.freightEstimate,

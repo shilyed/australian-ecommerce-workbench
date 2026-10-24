@@ -7,6 +7,7 @@ import OrdersPage from "./orders/OrdersPage";
 import FulfillmentPage from "./fulfillment/FulfillmentPage";
 import CatalogPage from "./catalog/CatalogPage";
 import PurchasingPage from "./purchasing/PurchasingPage";
+import FinancePage from "./finance/FinancePage";
 
 const fixture = vi.hoisted(() => {
   const sku = {
@@ -26,6 +27,9 @@ const fixture = vi.hoisted(() => {
     listings: [],
     purchaseOrders: [],
     report: [],
+    costs: [],
+    exchangeRates: [],
+    settlements: [],
     tasks: [],
     skus: [sku],
     inventory: [
@@ -135,6 +139,10 @@ vi.mock("@/providers/trpc", () => {
         addPayment: action,
         postReceipt: action,
         closePurchaseRemainder: action,
+        addExchangeRate: action,
+        addCostEntry: action,
+        verifyOrderProfit: action,
+        reconcileSettlement: action,
       },
     },
   };
@@ -197,5 +205,29 @@ describe("merchant workspace page wiring", () => {
     expect(html).toContain('value="4" selected=""');
     expect(html).toMatch(/name="supplierSpec"[^>]*value="Blue"/);
     expect(html).toMatch(/name="quantity"[^>]*value="2"/);
+  });
+  it("keeps default stock, purchasing, and shipping views list-first", () => {
+    const stock = render(<CatalogPage />, "/inventory");
+    expect(stock).toContain("库存与补货");
+    expect(stock).not.toContain('name="hsCode"');
+    const purchasing = render(<PurchasingPage />, "/procurement");
+    expect(purchasing).toContain("暂无符合条件的采购单");
+    expect(purchasing).not.toContain('name="internalNo"');
+    const shipping = render(<FulfillmentPage mode="shipping" />, "/shipping");
+    expect(shipping).toContain("TEST-42-P01");
+    expect(shipping).not.toContain('name="carrier"');
+  });
+  it("preserves finance permissions and never invents an empty financial trend", () => {
+    expect(render(<FinancePage />, "/finance")).toContain("当前角色无财务权限");
+    fixture.permissions.finance = true;
+    try {
+      const html = render(<FinancePage />, "/finance");
+      expect(html).toContain("暂无订单财务数据");
+      expect(html).toContain("不会生成演示趋势或虚构利润");
+      expect(html).not.toContain('name="rate"');
+      expect(html).not.toContain("recharts-responsive-container");
+    } finally {
+      fixture.permissions.finance = false;
+    }
   });
 });

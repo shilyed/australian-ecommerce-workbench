@@ -12,6 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/workbench/PageHeader";
+import { FormSheet } from "@/components/workbench/FormSheet";
+import {
+  DecisionDialog,
+  type DecisionRequest,
+} from "@/components/workbench/DecisionDialog";
 import { EmptyPanel, LoadingPanel } from "@/components/workbench/States";
 import { StatusPill } from "@/components/workbench/StatusPill";
 import { dateOnly, dateTime, money } from "@/lib/format";
@@ -20,12 +25,31 @@ import { trpc } from "@/providers/trpc";
 
 export default function PurchasingPage() {
   const workspace = useWorkspace();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const setPanel = (panel: string, open: boolean) =>
+    setParams(
+      previous => {
+        const next = new URLSearchParams(previous);
+        if (open) next.set("panel", panel);
+        else if (next.get("panel") === panel) next.delete("panel");
+        return next;
+      },
+      { replace: true }
+    );
   const [selectedPoId, setSelectedPoId] = useState<number | null>(null);
   const [receiptLineId, setReceiptLineId] = useState<number | null>(null);
+  const [decision, setDecision] = useState<DecisionRequest | null>(null);
   const createPo = trpc.workbench.createPurchaseOrder.useMutation({
     onSuccess: async () => {
       toast.success("采购单已创建，收货质检合格后会增加可售库存");
+      setParams(
+        previous => {
+          const next = new URLSearchParams(previous);
+          for (const key of ["panel", "sku", "quantity"]) next.delete(key);
+          return next;
+        },
+        { replace: true }
+      );
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -37,6 +61,7 @@ export default function PurchasingPage() {
           ? "重复付款请求已被幂等忽略"
           : "付款记录已保存（不代表真实支付）"
       );
+      setPanel("payment", false);
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -50,6 +75,7 @@ export default function PurchasingPage() {
             ? "收货已过账，但缺 CNY/AUD 汇率，成本待补"
             : "到货质检已过账"
       );
+      setPanel("receipt", false);
       await workspace.refresh();
     },
     onError: error => toast.error(error.message),
@@ -183,7 +209,7 @@ export default function PurchasingPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="PROCUREMENT / PAYMENT ≠ INVENTORY"
+        eyebrow="供应链 / 采购与收货"
         title="采购与收货"
         description="缺货商品可直接带入采购。记录付款不会增加库存，到货后核对数量并完成质检。"
         actions={
@@ -212,16 +238,32 @@ export default function PurchasingPage() {
         </p>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[390px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <details
-            className="ops-panel"
-            open={restockSku !== undefined || data.purchaseOrders.length === 0}
+      <div
+        className={
+          restockSku
+            ? "grid gap-4 xl:grid-cols-[390px_minmax(0,1fr)]"
+            : "space-y-6"
+        }
+      >
+        <div className="flex flex-wrap items-start gap-2">
+          <FormSheet
+            title="创建采购单"
+            description="付款与库存分开记录，只有收货质检合格后才增加可售库存。"
+            open={params.get("panel") === "create"}
+            onOpenChange={open => {
+              if (open) createPo.reset();
+              setPanel("create", open);
+            }}
+            inline={restockSku !== undefined}
+            pending={createPo.isPending}
+            error={createPo.error?.message}
+            trigger={
+              <Button disabled={createPo.isPending}>
+                <PackagePlus className="mr-2 h-4 w-4" />
+                创建采购单
+              </Button>
+            }
           >
-            <summary className="cursor-pointer p-4 font-semibold">
-              <PackagePlus className="mr-2 inline h-4 w-4" />
-              创建采购单
-            </summary>
             <form
               key={restockSku?.id ?? "new"}
               onSubmit={submitPo}
@@ -344,13 +386,28 @@ export default function PurchasingPage() {
                 创建采购单
               </Button>
             </form>
-          </details>
+          </FormSheet>
 
-          <section className="ops-panel">
-            <div className="ops-panel-header">
-              <h2 className="ops-title">付款 / 供应商退款</h2>
-              <CircleDollarSign className="h-4 w-4 text-emerald-300" />
-            </div>
+          <FormSheet
+            title="付款 / 供应商退款"
+            description="记录现金事实，不代表真实支付，也不会增加库存。"
+            open={params.get("panel") === "payment"}
+            onOpenChange={open => {
+              if (open) addPayment.reset();
+              setPanel("payment", open);
+            }}
+            pending={addPayment.isPending}
+            error={addPayment.error?.message}
+            trigger={
+              <Button
+                variant="outline"
+                disabled={!selectedPo || addPayment.isPending}
+              >
+                <CircleDollarSign className="mr-2 h-4 w-4" />
+                记录付款 / 退款
+              </Button>
+            }
+          >
             <form onSubmit={submitPayment} className="grid gap-3 p-4">
               <label className="grid gap-1">
                 <span className="ops-label">采购单</span>
@@ -419,13 +476,28 @@ export default function PurchasingPage() {
                 记录现金事实
               </Button>
             </form>
-          </section>
+          </FormSheet>
 
-          <section className="ops-panel">
-            <div className="ops-panel-header">
-              <h2 className="ops-title">分批到货与质检</h2>
-              <Truck className="h-4 w-4 text-amber-300" />
-            </div>
+          <FormSheet
+            title="分批到货与质检"
+            description="按实际到货与质检结果过账，只有合格品增加可售库存。"
+            open={params.get("panel") === "receipt"}
+            onOpenChange={open => {
+              if (open) postReceipt.reset();
+              setPanel("receipt", open);
+            }}
+            pending={postReceipt.isPending}
+            error={postReceipt.error?.message}
+            trigger={
+              <Button
+                variant="outline"
+                disabled={!selectedPo || postReceipt.isPending}
+              >
+                <Truck className="mr-2 h-4 w-4" />
+                到货与质检
+              </Button>
+            }
+          >
             <form
               key={`${selectedPo?.id}-${receiptLine?.id}-${unreceivedQty}`}
               onSubmit={submitReceipt}
@@ -529,7 +601,7 @@ export default function PurchasingPage() {
                 系统强制：实收 = 合格 + 残次 + 待检；仅合格品增加可售库存。
               </p>
             </form>
-          </section>
+          </FormSheet>
         </div>
 
         <section className="space-y-4 min-w-0">
@@ -603,17 +675,19 @@ export default function PurchasingPage() {
                       <div className="mb-3 grid gap-2 sm:grid-cols-4">
                         <div className="rounded-xl bg-secondary/40 p-3">
                           <p className="ops-label">订购</p>
-                          <p className="mt-2 font-mono text-xl">{ordered}</p>
+                          <p className="mt-2 text-xl font-semibold tabular-nums">
+                            {ordered}
+                          </p>
                         </div>
                         <div className="rounded-xl bg-secondary/40 p-3">
                           <p className="ops-label">已收</p>
-                          <p className="mt-2 font-mono text-xl text-primary">
+                          <p className="mt-2 text-xl font-semibold tabular-nums text-primary">
                             {received}
                           </p>
                         </div>
                         <div className="rounded-xl bg-secondary/40 p-3">
                           <p className="ops-label">未到</p>
-                          <p className="mt-2 font-mono text-xl text-amber-300">
+                          <p className="mt-2 text-xl font-semibold tabular-nums text-amber-300">
                             {Math.max(
                               0,
                               ordered -
@@ -627,7 +701,7 @@ export default function PurchasingPage() {
                         </div>
                         <div className="rounded-xl bg-secondary/40 p-3">
                           <p className="ops-label">关闭量</p>
-                          <p className="mt-2 font-mono text-xl">
+                          <p className="mt-2 text-xl font-semibold tabular-nums">
                             {po.lines.reduce(
                               (sum, line) => sum + line.closedQty,
                               0
@@ -656,7 +730,7 @@ export default function PurchasingPage() {
                                 <td>
                                   {line.receivedQty}/{line.quantity}
                                 </td>
-                                <td className="font-mono">
+                                <td className="tabular-nums">
                                   {line.unitPrice === null
                                     ? "无权限"
                                     : money(line.unitPrice, line.currency)}
@@ -690,9 +764,33 @@ export default function PurchasingPage() {
                       </div>
                     </div>
                     <aside className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPoId(po.id);
+                            addPayment.reset();
+                            setPanel("payment", true);
+                          }}
+                        >
+                          记录付款
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedPoId(po.id);
+                            postReceipt.reset();
+                            setPanel("receipt", true);
+                          }}
+                        >
+                          收货质检
+                        </Button>
+                      </div>
                       <div className="rounded-xl border bg-secondary/30 p-3">
                         <p className="ops-label">付款汇总</p>
-                        <p className="mt-2 font-mono text-lg">
+                        <p className="mt-2 text-lg font-semibold tabular-nums">
                           {data.permissions.finance
                             ? money(paymentTotal, "CNY")
                             : "无权限"}
@@ -719,14 +817,22 @@ export default function PurchasingPage() {
                         variant="outline"
                         className="min-h-11 w-full"
                         onClick={() => {
-                          const reason = window.prompt(
-                            "关闭剩余未交数量的原因（保留原订购量与关闭量）"
-                          );
-                          if (reason)
-                            closeRemainder.mutate({
-                              purchaseOrderId: po.id,
-                              reason,
-                            });
+                          setDecision({
+                            title: "关闭剩余未交数量",
+                            description: `${po.internalNo}：保留原订购量与关闭量，填写原因后确认。`,
+                            fields: [
+                              {
+                                name: "reason",
+                                label: "关闭原因",
+                                type: "textarea",
+                              },
+                            ],
+                            onConfirm: form =>
+                              closeRemainder.mutateAsync({
+                                purchaseOrderId: po.id,
+                                reason: String(form.get("reason") ?? "").trim(),
+                              }),
+                          });
                         }}
                       >
                         关闭剩余未交
@@ -739,6 +845,11 @@ export default function PurchasingPage() {
           )}
         </section>
       </div>
+      <DecisionDialog
+        key={decision?.title ?? "closed"}
+        request={decision}
+        onClose={() => setDecision(null)}
+      />
     </div>
   );
 }
