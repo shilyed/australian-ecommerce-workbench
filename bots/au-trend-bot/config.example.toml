@@ -1,0 +1,47 @@
+[topic]
+id = "coffee-cups-au"
+name = "澳洲咖啡杯"
+keywords = ["coffee cup", "travel mug", "reusable coffee cup"]
+timezone = "Australia/Sydney"
+
+[sources]
+ebay = true
+tiktok = true
+trends = true
+
+[features]
+"材质: 陶瓷" = ["ceramic", "porcelain", "陶瓷"]
+"材质: 不锈钢" = ["stainless steel", "不锈钢"]
+"材质: 玻璃" = ["glass", "玻璃"]
+"结构: 双层" = ["double wall", "double-wall", "双层"]
+"结构: 保温" = ["insulated", "thermal", "保温"]
+"杯盖: 防漏文案" = ["leakproof", "leak-proof", "防漏"]
+"杯盖: 吸管" = ["straw", "吸管"]
+"颜色: 柔和色系" = ["pastel", "sage", "cream", "柔和"]
+"风格: 极简" = ["minimal", "minimalist", "极简"]
+"场景: 通勤" = ["commute", "commuter", "travel", "通勤"]
+"场景: 户外" = ["camping", "outdoor", "露营"]
+
+[schedule]
+collect_hour = 6
+report_hour = 8
+catchup_weeks = 2
+poll_seconds = 60
+
+[limits]
+items_per_query = 10
+refresh_limit = 20
+http_requests_per_day = 120
+http_timeout_seconds = 20
+http_retries = 2
+http_min_interval_seconds = 0.3
+collection_attempts_per_day = 3
+serpapi_calls_per_day = 1
+apify_runs_per_day = 2
+apify_run_max_cents = 50
+apify_monthly_max_cents = 3100
+apify_timeout_seconds = 300
+apify_poll_seconds = 30
+ai_calls_per_day = 2
+ai_max_input_chars = 10000
+ai_max_output_tokens = 800
