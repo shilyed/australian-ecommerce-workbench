@@ -61,6 +61,17 @@ docker compose -p au-trend-bot -f compose.yml run --rm --no-deps bot --config /o
 docker compose -p au-trend-bot -f compose.yml run --rm --no-deps bot --config /opt/bot/config.toml doctor
 ```
 
+默认构建使用官方 `https://pypi.org/simple`。若目标机访问 PyPI 缓慢，可仅将上面的
+`build` 命令替换为以下可选命令，使用腾讯云公开镜像：
+
+```bash
+docker compose -p au-trend-bot -f compose.yml build --pull --build-arg PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple bot
+```
+
+`PIP_INDEX_URL` 仅用于本次镜像构建，不写入容器运行环境，也不修改服务器全局 pip 配置。
+构建参数可能出现在构建历史、缓存或日志中，**只能传入无凭证的公开 HTTPS URL**；
+不要在 URL 中包含用户名、密码或 token，构建参数不是秘密存储。
+
 演示的所有 `checks` 应为 true，退出码 `0`，且 `live_verified=false`。
 该容器演示写到 `/tmp`，容器退出后不会保留；要查看长期演示 HTML，使用 README 的本地 Python
 命令输出到独立 `demo-output`。不能向正式 `/data` 写演示数据库或把 DEMO 发送给客户。

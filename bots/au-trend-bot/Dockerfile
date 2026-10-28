@@ -9,6 +9,7 @@ WORKDIR /opt/bot
 COPY pyproject.toml ./
 COPY au_trend_bot ./au_trend_bot
 COPY config.example.toml ./
+ARG PIP_INDEX_URL=https://pypi.org/simple
 RUN pip install --no-cache-dir . \
     && groupadd --gid 10001 bot \
     && useradd --uid 10001 --gid 10001 --no-create-home bot \
