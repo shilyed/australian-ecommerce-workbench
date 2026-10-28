@@ -1,0 +1,48 @@
+name: au-trend-bot
+
+services:
+  bot:
+    image: au-trend-bot:1.0.0
+    build:
+      context: .
+    init: true
+    restart: unless-stopped
+    user: "10001:10001"
+    env_file:
+      - path: .env
+        format: raw
+    environment:
+      ATB_DATA_DIR: /data
+      PYTHONUTF8: "1"
+    command: ["--config", "/opt/bot/config.toml", "run"]
+    volumes:
+      - trend_data:/data
+      - ./config.toml:/opt/bot/config.toml:ro
+      - ./inputs:/imports:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 512m
+    cpus: 0.5
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD", "python", "-m", "au_trend_bot", "--config",
+          "/opt/bot/config.toml", "health", "--scheduler-only"
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  trend_data:

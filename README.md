@@ -57,5 +57,7 @@ Docker Compose + Caddy + MySQL 的服务器部署配置。
 - [`docker-compose.yml`](docker-compose.yml)：应用、MySQL、Caddy 一键编排。
 - [架构说明](docs/architecture-v2.md)：模块边界、依赖方向、兼容约束和演进边界。
 - [开发与平台配置](app/README.md)：安装、启动、数据库、OAuth 与常用命令。
+- [澳洲电商趋势机器人](bots/au-trend-bot/README.md)：独立日采／周报程序、需求报告及腾讯云部署手册；
+  不连接网站数据库，不占用网站端口，真实来源及服务器仍需用户授权配置。
 
 此版本属于架构与核心流程 Alpha，不是自动同步订单、自动购买物流面单或自动退款的完整运营系统。真实数据库过账与平台授权需要在测试环境联调后再投入日常经营。
